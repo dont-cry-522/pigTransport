@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统首页 - 生猪运输管理系统</title>
+    <link rel="stylesheet" href="/layui/css/layui.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            background: #f8f9fa;
+        }
+
+        .dashboard-container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .welcome-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .welcome-title {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .welcome-icon {
+            font-size: 40px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .welcome-subtitle {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+
+        .user-info {
+            margin-top: 15px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .role-badge {
+            background: rgba(255, 255, 255, 0.3);
+            padding: 4px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .login-time {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .stats-grid {
+            margin: 30px 0;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: 1px solid #f0f0f0;
+            height: 100%;
+            text-align: center;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        .stat-icon {
+            font-size: 36px;
+            margin-bottom: 15px;
+            display: inline-block;
+            padding: 15px;
+            border-radius: 10px;
+            color: white;
+        }
+
+        .user-icon { background: linear-gradient(45deg, #5FB878, #4CAF50); }
+        .vehicle-icon { background: linear-gradient(45deg, #1E9FFF, #2196F3); }
+        .batch-icon { background: linear-gradient(45deg, #FFB800, #FF9800); }
+        .task-icon { background: linear-gradient(45deg, #9C27B0, #673AB7); }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: 700;
+            color: #333;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* 快捷操作区域 */
+        .quick-section {
+            margin: 40px 0 30px 0;
+        }
+
+        .section-title {
+            font-size: 22px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title-icon {
+            font-size: 24px;
+        }
+
+        .quick-actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .quick-action-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s;
+            border: 1px solid #f0f0f0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .quick-action-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            border-color: #5FB878;
+        }
+
+        .action-icon-wrapper {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            flex-shrink: 0;
+        }
+
+        .admin-action { background: linear-gradient(45deg, #667eea, #764ba2); color: white; }
+        .driver-action { background: linear-gradient(45deg, #4CAF50, #2E7D32); color: white; }
+        .farmer-action { background: linear-gradient(45deg, #FF9800, #F57C00); color: white; }
+
+        .action-content {
+            flex: 1;
+        }
+
+        .action-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .action-desc {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* 功能说明区域 */
+        .guide-section {
+            margin-top: 40px;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .guide-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .guide-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .guide-item {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #5FB878;
+        }
+
+        .guide-item-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .guide-item-desc {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* 提示信息 */
+        .hint-box {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e8f5e9;
+            border-radius: 10px;
+            border-left: 4px solid #5FB878;
+            color: #2E7D32;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* 空状态提示 */
+        .empty-state {
+            text-align: center;
+            padding: 50px 20px;
+            color: #999;
+        }
+
+        .empty-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        /* 调试信息 */
+        .debug-info {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 9999;
+            max-width: 300px;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .dashboard-container {
+                padding: 15px;
+            }
+
+            .welcome-title {
+                font-size: 22px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .quick-actions-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .guide-list {
+                grid-template-columns: 1fr;
+            }
+
+            .stat-card {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard-container">
+    <!-- 欢迎卡片 -->
+    <div class="welcome-card">
+        <div class="welcome-title">
+            <span class="welcome-icon">🐷</span>
+            <span id="welcomeText">生猪运输管理系统</span>
+        </div>
+        <div class="welcome-subtitle" id="welcomeSubtitle">多角色协同工作平台</div>
+        <div class="user-info">
+            <span id="userName">正在加载用户信息...</span>
+            <span class="role-badge" id="userRoleBadge">角色</span>
+            <span class="login-time" id="loginTime">登录时间：--:--:--</span>
+        </div>
+    </div>
+
+    <!-- 统计卡片（通用） -->
+    <div class="stats-grid">
+        <div class="layui-row layui-col-space15">
+            <div class="layui-col-md3 layui-col-sm6">
+                <div class="stat-card">
+                    <div class="stat-icon user-icon">👥</div>
+                    <div class="stat-number" id="stat1">0</div>
+                    <div class="stat-label" id="label1">统计数据</div>
+                </div>
+            </div>
+            <div class="layui-col-md3 layui-col-sm6">
+                <div class="stat-card">
+                    <div class="stat-icon vehicle-icon">🚚</div>
+                    <div class="stat-number" id="stat2">0</div>
+                    <div class="stat-label" id="label2">统计数据</div>
+                </div>
+            </div>
+            <div class="layui-col-md3 layui-col-sm6">
+                <div class="stat-card">
+                    <div class="stat-icon batch-icon">🐖</div>
+                    <div class="stat-number" id="stat3">0</div>
+                    <div class="stat-label" id="label3">统计数据</div>
+                </div>
+            </div>
+            <div class="layui-col-md3 layui-col-sm6">
+                <div class="stat-card">
+                    <div class="stat-icon task-icon">📦</div>
+                    <div class="stat-number" id="stat4">0</div>
+                    <div class="stat-label" id="label4">统计数据</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 快捷操作区域（根据角色动态显示） -->
+    <div class="quick-section" id="quickActionsSection">
+        <div class="section-title">
+            <span class="section-title-icon">🚀</span>
+            <span id="quickTitle">快捷操作</span>
+        </div>
+        <div class="quick-actions-grid" id="quickActionsGrid">
+            <!-- 这里会通过JS动态生成快捷操作卡片 -->
+        </div>
+        <div class="hint-box" id="quickHint">
+            💡 提示：这些快捷操作与左侧菜单栏功能相同，点击即可快速访问
+        </div>
+    </div>
+
+    <!-- 功能使用指南（根据角色动态显示） -->
+    <div class="guide-section" id="guideSection">
+        <div class="guide-title">
+            <span>📚</span>
+            <span id="guideTitle">功能使用说明</span>
+        </div>
+        <div class="guide-list" id="guideList">
+            <!-- 这里会通过JS动态生成功能说明 -->
+        </div>
+    </div>
+
+    <!-- 系统状态提示 -->
+    <div class="hint-box" style="margin-top: 30px; background: #e3f2fd; border-color: #2196F3; color: #1565C0;">
+        <span>ℹ️</span>
+        <span>您也可以通过左侧菜单栏访问所有功能，快捷操作仅为方便使用。</span>
+    </div>
+</div>
+
+<!-- 调试信息 -->
+<div class="debug-info" id="debugInfo" style="display: none;">
+    调试信息加载中...
+</div>
+
+<script src="/layui/layui.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script>
+    // ========== 全局变量 ==========
+    let currentUser = null;
+    let userRole = null;
+    let userName = null;
+
+    // ========== 页面加载完成 ==========
+    $(document).ready(function() {
+        console.log('🚀 main.html 开始加载');
+
+        // 1. 显示调试信息
+        showDebugInfo('页面开始加载');
+
+        // 2. 监听父窗口消息
+        setupMessageListener();
+
+        // 3. 尝试获取用户信息
+        loadUserInfo();
+
+        // 4. 更新登录时间
+        updateLoginTime();
+
+        // 5. 如果没有获取到用户信息，5秒后再次尝试
+        setTimeout(checkUserInfo, 5000);
+    });
+
+    // ========== 监听父窗口消息 ==========
+    function setupMessageListener() {
+        window.addEventListener('message', function(event) {
+            console.log('📨 收到消息:', event.data);
+
+            if (event.data && event.data.type === 'USER_INFO') {
+                console.log('✅ 收到用户信息:', event.data.userInfo);
+                processUserInfo(event.data.userInfo);
+            }
+        });
+
+        // 向父窗口请求用户信息
+        if (window.parent !== window) {
+            console.log('📤 向父窗口请求用户信息');
+            window.parent.postMessage({ type: 'REQUEST_USER_INFO' }, '*');
+        }
+    }
+
+    // ========== 获取用户信息 ==========
+    function loadUserInfo() {
+        console.log('🔍 开始获取用户信息');
+        showDebugInfo('正在获取用户信息...');
+
+        // 方式1：从 localStorage 获取
+        try {
+            const userInfoStr = localStorage.getItem('userInfo');
+            console.log('📦 localStorage userInfo:', userInfoStr);
+
+            if (userInfoStr && userInfoStr !== 'undefined' && userInfoStr !== 'null') {
+                const userInfo = JSON.parse(userInfoStr);
+                console.log('✅ 从 localStorage 获取到用户信息:', userInfo);
+                processUserInfo(userInfo);
+                return;
+            }
+        } catch (e) {
+            console.error('❌ 解析 localStorage 失败:', e);
+        }
+
+        // 方式2：从 URL 参数获取（用于测试）
+        const urlParams = new URLSearchParams(window.location.search);
+        const testRole = urlParams.get('role');
+        if (testRole && ['admin', 'driver', 'farmer'].includes(testRole)) {
+            console.log('🌐 从URL参数获取测试角色:', testRole);
+            const testUser = {
+                username: testRole + '1',
+                realName: testRole === 'admin' ? '管理员' :
+                    testRole === 'driver' ? '司机' : '养殖户',
+                role: testRole
+            };
+            processUserInfo(testUser);
+            return;
+        }
+
+        // 方式3：根据用户名推断角色
+        const usernameFromUrl = urlParams.get('username');
+        if (usernameFromUrl) {
+            console.log('🌐 从URL参数获取用户名:', usernameFromUrl);
+            const inferredUser = inferUserFromUsername(usernameFromUrl);
+            processUserInfo(inferredUser);
+            return;
+        }
+
+        console.log('⚠️ 无法获取用户信息，等待父窗口消息');
+        showDebugInfo('等待用户信息...');
+    }
+
+    // ========== 处理用户信息 ==========
+    function processUserInfo(userInfo) {
+        if (!userInfo) {
+            console.error('❌ 用户信息为空');
+            return;
+        }
+
+        console.log('🎯 处理用户信息:', userInfo);
+
+        // 保存用户信息
+        currentUser = userInfo;
+        userRole = userInfo.role;
+        userName = userInfo.realName || userInfo.username || '用户';
+
+        // 保存到 localStorage（供下次使用）
+        localStorage.setItem('userInfo', JSON.stringify(userInfo));
+
+        // 更新页面显示
+        updatePageByRole(userRole, userName);
+
+        // 显示调试信息
+        showDebugInfo(`用户: ${userName}, 角色: ${userRole}`);
+    }
+
+    // ========== 根据用户名推断用户信息 ==========
+    function inferUserFromUsername(username) {
+        const usernameStr = username.toString().toLowerCase();
+        let role = 'admin';
+        let realName = '用户';
+
+        if (usernameStr.includes('admin') || usernameStr === 'admin') {
+            role = 'admin';
+            realName = '管理员';
+        } else if (usernameStr.includes('driver') || usernameStr.includes('dri')) {
+            role = 'driver';
+            realName = '司机';
+        } else if (usernameStr.includes('farmer') || usernameStr.includes('farm')) {
+            role = 'farmer';
+            realName = '养殖户';
+        }
+
+        return {
+            username: username,
+            realName: realName,
+            role: role
+        };
+    }
+
+    // ========== 根据角色更新页面 ==========
+    function updatePageByRole(role, username) {
+        console.log('🔄 更新页面，角色:', role, '用户名:', username);
+
+        // 更新欢迎信息
+        updateWelcomeInfo(role, username);
+
+        // 更新统计卡片
+        updateStatsByRole(role);
+
+        // 更新快捷操作
+        updateQuickActionsByRole(role);
+
+        // 更新功能指南
+        updateGuideByRole(role);
+
+        // 加载统计数据
+        loadStatistics(role);
+    }
+
+    // ========== 更新欢迎信息 ==========
+    function updateWelcomeInfo(role, username) {
+        $('#userName').text('欢迎，' + username);
+
+        // 更新角色徽章
+        let roleConfig = {
+            admin: { name: '管理员', color: '#667eea' },
+            driver: { name: '司机', color: '#4CAF50' },
+            farmer: { name: '养殖户', color: '#FF9800' }
+        };
+
+        const config = roleConfig[role] || roleConfig.admin;
+        $('#userRoleBadge').text(config.name).css('background', config.color);
+
+        // 更新欢迎语
+        if (role === 'driver') {
+            $('#welcomeText').text('司机工作台');
+            $('#welcomeSubtitle').text('安全驾驶，准时送达');
+        } else if (role === 'farmer') {
+            $('#welcomeText').text('养殖户中心');
+            $('#welcomeSubtitle').text('科学养殖，智能管理');
+        } else {
+            $('#welcomeText').text('生猪运输管理系统');
+            $('#welcomeSubtitle').text('多角色协同工作平台');
+        }
+    }
+
+    // ========== 根据角色更新统计卡片 ==========
+    function updateStatsByRole(role) {
+        if (role === 'admin') {
+            $('#label1').text('系统用户');
+            $('#label2').text('运输车辆');
+            $('#label3').text('生猪批次');
+            $('#label4').text('运输任务');
+        } else if (role === 'driver') {
+            $('#label1').text('今日任务');
+            $('#label2').text('完成数量');
+            $('#label3').text('运输里程');
+            $('#label4').text('工作时长');
+        } else if (role === 'farmer') {
+            $('#label1').text('我的批次');
+            $('#label2').text('在途运输');
+            $('#label3').text('已完成');
+            $('#label4').text('本月收入');
+        }
+    }
+
+    // ========== 根据角色更新快捷操作 ==========
+    function updateQuickActionsByRole(role) {
+        const quickActionsGrid = $('#quickActionsGrid');
+        quickActionsGrid.empty();
+
+        let quickActions = [];
+
+        if (role === 'admin') {
+            $('#quickTitle').text('管理功能快捷操作');
+            quickActions = [
+                {
+                    icon: '👥',
+                    title: '用户管理',
+                    desc: '管理系统用户账户和权限设置',
+                    url: '/user-list.html',
+                    pageTitle: '用户管理',
+                    iconClass: 'admin-action'
+                },
+                {
+                    icon: '🚚',
+                    title: '车辆管理',
+                    desc: '管理运输车辆信息和状态',
+                    url: '/vehicle-list.html',
+                    pageTitle: '车辆管理',
+                    iconClass: 'admin-action'
+                },
+                {
+                    icon: '📦',
+                    title: '运输任务',
+                    desc: '分配和跟踪运输任务进度',
+                    url: '/task-list.html',
+                    pageTitle: '运输任务',
+                    iconClass: 'admin-action'
+                },
+                {
+                    icon: '🧼',
+                    title: '消毒记录',
+                    desc: '记录车辆消毒防疫情况',
+                    url: '/disinfection-list.html',
+                    pageTitle: '消毒记录',
+                    iconClass: 'admin-action'
+                }
+            ];
+        } else if (role === 'driver') {
+            $('#quickTitle').text('运输工作快捷操作');
+            quickActions = [
+                {
+                    icon: '📦',
+                    title: '我的任务',
+                    desc: '查看分配给我的运输任务',
+                    url: '/task-list.html',
+                    pageTitle: '我的任务',
+                    iconClass: 'driver-action'
+                },
+                {
+                    icon: '📍',
+                    title: '位置签到',
+                    desc: '运输途中进行位置签到',
+                    url: '/location-list.html',
+                    pageTitle: '位置签到',
+                    iconClass: 'driver-action'
+                },
+                {
+                    icon: '🧼',
+                    title: '消毒查看',
+                    desc: '查看车辆消毒情况',
+                    url: '/disinfection-list.html',
+                    pageTitle: '消毒记录',
+                    iconClass: 'driver-action'
+                },
+                {
+                    icon: '📋',
+                    title: '任务报告',
+                    desc: '填写运输任务完成报告',
+                    url: '#',
+                    pageTitle: '任务报告',
+                    iconClass: 'driver-action'
+                }
+            ];
+        } else if (role === 'farmer') {
+            $('#quickTitle').text('养殖管理快捷操作');
+            quickActions = [
+                {
+                    icon: '🐖',
+                    title: '生猪录入',
+                    desc: '录入新的生猪批次信息',
+                    url: '/batch-list.html',
+                    pageTitle: '生猪录入',
+                    iconClass: 'farmer-action'
+                },
+                {
+                    icon: '👀',
+                    title: '批次查看',
+                    desc: '查看我的生猪批次信息',
+                    url: '/batch-list.html',
+                    pageTitle: '批次查看',
+                    iconClass: 'farmer-action'
+                },
+                {
+                    icon: '🚚',
+                    title: '运输跟踪',
+                    desc: '跟踪生猪运输状态',
+                    url: '/task-list.html',
+                    pageTitle: '运输跟踪',
+                    iconClass: 'farmer-action'
+                },
+                {
+                    icon: '📊',
+                    title: '养殖统计',
+                    desc: '查看我的养殖数据统计',
+                    url: '#',
+                    pageTitle: '养殖统计',
+                    iconClass: 'farmer-action'
+                }
+            ];
+        }
+
+        // 生成快捷操作卡片
+        quickActions.forEach(action => {
+            const cardHtml = `
+                <div class="quick-action-card" onclick="openPage('${action.url}', '${action.pageTitle}')">
+                    <div class="action-icon-wrapper ${action.iconClass}">
+                        ${action.icon}
+                    </div>
+                    <div class="action-content">
+                        <div class="action-title">${action.title}</div>
+                        <div class="action-desc">${action.desc}</div>
+                    </div>
+                </div>
+            `;
+            quickActionsGrid.append(cardHtml);
+        });
+
+        // 更新提示信息
+        updateQuickHint(role);
+    }
+
+    // ========== 更新快捷操作提示 ==========
+    function updateQuickHint(role) {
+        let hint = '💡 提示：这些快捷操作与左侧菜单栏功能相同，点击即可快速访问';
+        $('#quickHint').text(hint);
+    }
+
+    // ========== 根据角色更新功能指南 ==========
+    function updateGuideByRole(role) {
+        const guideList = $('#guideList');
+        guideList.empty();
+
+        let guides = [];
+
+        if (role === 'admin') {
+            $('#guideTitle').text('管理员功能说明');
+            guides = [
+                {
+                    icon: '👥',
+                    title: '用户管理',
+                    desc: '可以添加、删除、修改系统用户账号，设置用户角色和权限'
+                },
+                {
+                    icon: '🚚',
+                    title: '车辆管理',
+                    desc: '管理所有运输车辆信息，包括车牌号、型号、状态等'
+                },
+                {
+                    icon: '📦',
+                    title: '任务分配',
+                    desc: '根据车辆状态分配运输任务，监控任务执行情况'
+                },
+                {
+                    icon: '📊',
+                    title: '数据统计',
+                    desc: '查看系统各项数据统计报表，进行数据分析'
+                }
+            ];
+        } else if (role === 'driver') {
+            $('#guideTitle').text('司机操作指南');
+            guides = [
+                {
+                    icon: '📦',
+                    title: '任务接收',
+                    desc: '在"我的任务"中查看管理员分配的运输任务'
+                },
+                {
+                    icon: '📍',
+                    title: '位置签到',
+                    desc: '运输途中按时进行位置签到，上报当前位置'
+                },
+                {
+                    icon: '🚚',
+                    title: '车辆检查',
+                    desc: '出车前检查车辆状况，确保运输安全'
+                },
+                {
+                    icon: '📋',
+                    title: '规范操作',
+                    desc: '按照标准流程完成运输任务，填写运输报告'
+                }
+            ];
+        } else if (role === 'farmer') {
+            $('#guideTitle').text('养殖户使用指南');
+            guides = [
+                {
+                    icon: '🐖',
+                    title: '生猪录入',
+                    desc: '准确录入生猪批次信息，包括品种、数量、重量等'
+                },
+                {
+                    icon: '👀',
+                    title: '信息跟踪',
+                    desc: '实时查看生猪运输状态，了解运输进度'
+                },
+                {
+                    icon: '📞',
+                    title: '沟通联系',
+                    desc: '与管理员和司机保持沟通，及时解决问题'
+                },
+                {
+                    icon: '📈',
+                    title: '数据管理',
+                    desc: '管理自己的养殖数据，进行统计分析'
+                }
+            ];
+        }
+
+        // 生成功能指南
+        guides.forEach(guide => {
+            const guideHtml = `
+                <div class="guide-item">
+                    <div class="guide-item-title">
+                        <span>${guide.icon}</span>
+                        <span>${guide.title}</span>
+                    </div>
+                    <div class="guide-item-desc">${guide.desc}</div>
+                </div>
+            `;
+            guideList.append(guideHtml);
+        });
+    }
+
+    // ========== 打开页面 ==========
+    function openPage(url, title) {
+        if (url === '#') {
+            showComingSoon();
+            return;
+        }
+
+        if (window.parent && window.parent.openTab) {
+            window.parent.openTab(url, title);
+        } else {
+            window.location.href = url;
+        }
+    }
+
+    // ========== 显示"开发中"提示 ==========
+    function showComingSoon() {
+        if (typeof layui !== 'undefined' && layui.layer) {
+            layui.use('layer', function() {
+                var layer = layui.layer;
+                layer.msg('🚧 功能开发中，敬请期待', {
+                    icon: 0,
+                    time: 2000
+                });
+            });
+        } else {
+            alert('🚧 功能开发中，敬请期待');
+        }
+    }
+
+    // ========== 加载统计数据 ==========
+    function loadStatistics(role) {
+        if (!role) role = userRole || 'admin';
+
+        if (role === 'admin') {
+            $('#stat1').text('15');
+            $('#stat2').text('8');
+            $('#stat3').text('32');
+            $('#stat4').text('18');
+        } else if (role === 'driver') {
+            $('#stat1').text('3');
+            $('#stat2').text('45');
+            $('#stat3').text('256');
+            $('#stat4').text('6.5h');
+        } else if (role === 'farmer') {
+            $('#stat1').text('12');
+            $('#stat2').text('3');
+            $('#stat3').text('28');
+            $('#stat4').text('¥58,600');
+        }
+    }
+
+    // ========== 更新登录时间 ==========
+    function updateLoginTime() {
+        try {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('zh-CN');
+            $('#loginTime').text('登录时间：' + timeStr);
+
+            setTimeout(updateLoginTime, 1000);
+        } catch (e) {
+            console.error('更新时间失败:', e);
+        }
+    }
+
+    // ========== 检查用户信息 ==========
+    function checkUserInfo() {
+        if (!currentUser) {
+            console.warn('⚠️ 5秒后仍未获取到用户信息，使用默认管理员');
+            const defaultUser = {
+                username: 'admin',
+                realName: '管理员',
+                role: 'admin'
+            };
+            processUserInfo(defaultUser);
+        }
+    }
+
+    // ========== 显示调试信息 ==========
+    function showDebugInfo(message) {
+        $('#debugInfo').html(message).show();
+
+        // 3秒后隐藏调试信息
+        setTimeout(() => {
+            $('#debugInfo').fadeOut();
+        }, 3000);
+    }
+
+    // ========== 如果没有layui，使用简单提示 ==========
+    if (typeof layui === 'undefined') {
+        window.openPage = function(url, title) {
+            if (url === '#') {
+                alert('🚧 功能开发中');
+                return;
+            }
+            window.location.href = url;
+        };
+    }
+</script>
+</body>
+</html>

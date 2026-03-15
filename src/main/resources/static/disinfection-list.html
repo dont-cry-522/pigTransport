@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>消毒记录管理 - 生猪运输管理系统</title>
+    <link rel="stylesheet" href="/layui/css/layui.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+        }
+        .page-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+            padding: 25px;
+        }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .page-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .page-title i {
+            color: #1E9FFF;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+        .search-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .search-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .search-item label {
+            color: #666;
+            font-size: 14px;
+        }
+        .layui-table {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .layui-table th {
+            background: #f8f9fa;
+            font-weight: 500;
+        }
+        .layui-btn-sm {
+            border-radius: 6px;
+        }
+        .img-preview {
+            max-width: 80px;
+            max-height: 60px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid #eee;
+            padding: 2px;
+            background: #fff;
+        }
+        .img-preview:hover {
+            border-color: #1E9FFF;
+            transform: scale(1.05);
+            transition: all 0.3s;
+        }
+        .no-image {
+            color: #999;
+            font-size: 12px;
+        }
+        .required-star {
+            color: red;
+            margin-right: 4px;
+        }
+        .form-container {
+            max-height: 700px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+        .form-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .form-container::-webkit-scrollbar-thumb {
+            background-color: #ddd;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+<div class="page-container">
+    <!-- 页面头部 -->
+    <div class="page-header">
+        <div class="page-title">
+            <i class="fas fa-shield-virus"></i>
+            消毒记录管理
+        </div>
+        <div class="btn-group">
+            <button class="layui-btn layui-btn-sm layui-btn-normal" id="addDisinfectionBtn">
+                <i class="fas fa-plus"></i> 新增记录
+            </button>
+        </div>
+    </div>
+
+    <!-- 搜索栏 -->
+    <div class="search-bar">
+        <div class="search-item">
+            <label for="carId">车辆ID：</label>
+            <input type="text" id="carId" class="layui-input" placeholder="请输入车辆ID" style="width: 150px;">
+        </div>
+        <div class="search-item">
+            <label for="disinfectionType">消毒类型：</label>
+            <select id="disinfectionType" class="layui-select" style="width: 150px;">
+                <option value="">全部类型</option>
+                <option value="车辆消毒">车辆消毒</option>
+                <option value="场地消毒">场地消毒</option>
+                <option value="设备消毒">设备消毒</option>
+                <option value="人员消毒">人员消毒</option>
+            </select>
+        </div>
+        <div class="search-item">
+            <label for="disinfectionDate">消毒日期：</label>
+            <input type="text" id="disinfectionDate" class="layui-input" placeholder="选择日期" style="width: 180px;">
+        </div>
+        <div class="search-item">
+            <button class="layui-btn layui-btn-sm" id="searchBtn">
+                <i class="fas fa-search"></i> 搜索
+            </button>
+            <button class="layui-btn layui-btn-sm layui-btn-primary" id="resetBtn">
+                <i class="fas fa-redo"></i> 重置
+            </button>
+        </div>
+    </div>
+
+    <!-- 表格区域 -->
+    <table class="layui-table" id="disinfectionTable" lay-filter="disinfectionTable"></table>
+</div>
+
+<!-- 新增/编辑弹窗 -->
+<div id="disinfectionForm" style="display: none;">
+    <div class="form-container" style="padding: 20px;">
+        <input type="hidden" id="disinfectionId">
+        <div class="layui-form-item">
+            <label class="layui-form-label"><span class="required-star">*</span>车辆ID</label>
+            <div class="layui-input-block">
+                <input type="text" id="formCarId" lay-verify="required|number" placeholder="请输入车辆ID" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">司机ID</label>
+            <div class="layui-input-block">
+                <input type="text" id="formDriverId" lay-verify="number" placeholder="请输入司机ID（可选）" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">任务ID</label>
+            <div class="layui-input-block">
+                <input type="text" id="formTaskId" lay-verify="number" placeholder="请输入任务ID（可选）" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label"><span class="required-star">*</span>消毒类型</label>
+            <div class="layui-input-block">
+                <select id="formDisinfectionType" lay-verify="required" class="layui-select">
+                    <option value="">请选择类型</option>
+                    <option value="车辆消毒">车辆消毒</option>
+                    <option value="场地消毒">场地消毒</option>
+                    <option value="设备消毒">设备消毒</option>
+                    <option value="人员消毒">人员消毒</option>
+                </select>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label"><span class="required-star">*</span>消毒地点</label>
+            <div class="layui-input-block">
+                <input type="text" id="formLocation" lay-verify="required" placeholder="请输入消毒地点" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">消毒剂</label>
+            <div class="layui-input-block">
+                <input type="text" id="formDisinfectant" placeholder="请输入消毒剂名称（可选）" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">消毒照片</label>
+            <div class="layui-input-block">
+                <button type="button" class="layui-btn layui-btn-primary" id="uploadImgBtn">
+                    <i class="fas fa-upload"></i> 选择图片
+                </button>
+                <div style="margin: 10px 0; font-size: 12px; color: #666;">
+                    支持格式：jpg、png、jpeg、gif，大小不超过5MB
+                </div>
+                <input type="hidden" id="formImgUrl">
+                <div id="imgPreviewArea" style="margin-top: 10px; display: none;">
+                    <img id="imgPreview" class="img-preview" src="" alt="消毒照片">
+                    <div style="margin-top: 5px;">
+                        <button type="button" class="layui-btn layui-btn-xs layui-btn-danger" id="removeImgBtn">
+                            <i class="fas fa-trash"></i> 删除图片
+                        </button>
+                    </div>
+                </div>
+                <div id="noImgArea" style="display: none;">
+                    <span class="no-image">暂无图片</span>
+                </div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">备注信息</label>
+            <div class="layui-input-block">
+                <textarea id="formRemark" placeholder="请输入备注信息（可选）" class="layui-textarea" rows="3"></textarea>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 图片预览弹窗 -->
+<div id="imagePreviewModal" style="display: none; padding: 20px; text-align: center;">
+    <img id="largeImage" src="" style="max-width: 100%; max-height: 500px;">
+</div>
+
+<script src="/layui/layui.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script>
+    layui.use(['table', 'form', 'layer', 'laydate', 'upload'], function() {
+        var table = layui.table;
+        var form = layui.form;
+        var layer = layui.layer;
+        var laydate = layui.laydate;
+        var upload = layui.upload;
+
+        var currentLayerIndex = null;
+
+        // 渲染日期选择器
+        laydate.render({elem: '#disinfectionDate', range: false});
+
+        // 表格渲染 - 关键修改点
+        var disinfectionTable = table.render({
+            elem: '#disinfectionTable',
+            url: '/api/disinfection/list',
+            method: 'GET',
+            page: true,
+            limit: 10,
+            limits: [10, 20, 30, 50],
+            cols: [[
+                {field: 'disinfectionId', title: 'ID', width: 70, align: 'center', sort: true},
+                {field: 'carId', title: '车辆ID', width: 90, align: 'center'},
+                {field: 'driverId', title: '司机ID', width: 90, align: 'center'},
+                {field: 'taskId', title: '任务ID', width: 90, align: 'center'},
+                {field: 'disinfectionType', title: '消毒类型', width: 110, align: 'center'},
+                {field: 'location', title: '消毒地点', width: 150},
+                {field: 'disinfectant', title: '消毒剂', width: 120},
+                {field: 'imgUrl', title: '消毒照片', width: 110, align: 'center', templet: function(d) {
+                        if (d.imgUrl && d.imgUrl.trim() !== '') {
+                            var imgUrl = d.imgUrl;
+                            if (!imgUrl.startsWith('http') && !imgUrl.startsWith('/img/')) {
+                                imgUrl = '/img/' + imgUrl;
+                            }
+                            return '<img src="' + imgUrl + '" class="img-preview" onclick="showLargeImage(\'' + imgUrl + '\')" title="点击查看大图">';
+                        }
+                        return '<span class="no-image">无图片</span>';
+                    }},
+                {field: 'disinfectionTime', title: '消毒时间', width: 170, align: 'center', templet: function(d) {
+                        if (d.disinfectionTime) {
+                            return formatDateTime(d.disinfectionTime);
+                        }
+                        return formatDateTime(d.createTime);
+                    }},
+                {field: 'remark', title: '备注', width: 120, templet: function(d) {
+                        return d.remark ? (d.remark.length > 8 ? d.remark.substring(0, 8) + '...' : d.remark) : '';
+                    }},
+                {title: '操作', width: 150, align: 'center', fixed: 'right', templet: function(d) {
+                        // 关键修改：使用 disinfectionId 而不是 id
+                        return '<button class="layui-btn layui-btn-xs layui-btn-normal edit-btn" data-id="' + d.disinfectionId + '">编辑</button>' +
+                            '<button class="layui-btn layui-btn-xs layui-btn-danger delete-btn" data-id="' + d.disinfectionId + '" style="margin-left:5px;">删除</button>';
+                    }}
+            ]],
+            parseData: function(res) {
+                console.log("表格数据：", res);
+                // 确保数据转换正确
+                if (res.data && res.data.records) {
+                    res.data.records.forEach(function(item) {
+                        // 保证有id字段（用于操作按钮）
+                        if (!item.id && item.disinfectionId) {
+                            item.id = item.disinfectionId;
+                        }
+                    });
+                }
+                return {
+                    "code": res.code || 0,
+                    "msg": res.message || "",
+                    "count": res.data ? (res.data.total || res.data.length || 0) : 0,
+                    "data": res.data ? (res.data.records || res.data.list || res.data) : []
+                };
+            },
+            done: function(res, curr, count) {
+                console.log("表格渲染完成，数据条数：" + count);
+            }
+        });
+
+        // 日期格式化函数
+        function formatDateTime(dateStr) {
+            if (!dateStr) return '';
+            try {
+                var date = new Date(dateStr);
+                return date.getFullYear() + '-' +
+                    padZero(date.getMonth() + 1) + '-' +
+                    padZero(date.getDate()) + ' ' +
+                    padZero(date.getHours()) + ':' +
+                    padZero(date.getMinutes()) + ':' +
+                    padZero(date.getSeconds());
+            } catch (e) {
+                return dateStr;
+            }
+        }
+
+        function padZero(num) {
+            return num < 10 ? '0' + num : num;
+        }
+
+        // 大图预览函数
+        window.showLargeImage = function(imgUrl) {
+            $('#largeImage').attr('src', imgUrl);
+            layer.open({
+                type: 1,
+                title: '消毒照片预览',
+                area: ['700px', '600px'],
+                content: $('#imagePreviewModal')
+            });
+        };
+
+        // 搜索按钮
+        $('#searchBtn').click(function() {
+            var carId = $('#carId').val();
+            var disinfectionType = $('#disinfectionType').val();
+            var date = $('#disinfectionDate').val();
+
+            console.log("搜索条件：", {carId: carId, disinfectionType: disinfectionType, date: date});
+
+            disinfectionTable.reload({
+                where: {
+                    carId: carId,
+                    disinfectionType: disinfectionType,
+                    date: date
+                },
+                page: {curr: 1}
+            });
+        });
+
+        // 重置按钮
+        $('#resetBtn').click(function() {
+            $('#carId').val('');
+            $('#disinfectionType').val('');
+            $('#disinfectionDate').val('');
+            form.render('select');
+
+            disinfectionTable.reload({
+                where: {},
+                page: {curr: 1}
+            });
+        });
+
+        // 图片上传配置
+        var uploadInst = upload.render({
+            elem: '#uploadImgBtn',
+            url: '/api/disinfection/upload/img',
+            accept: 'images',
+            exts: 'jpg|png|jpeg|gif|bmp',
+            size: 5120, // 5MB
+            before: function() {
+                layer.load(2);
+            },
+            done: function(res) {
+                layer.closeAll('loading');
+                console.log("上传结果：", res);
+
+                if (res.code === 200) {
+                    var imgUrl = res.data.url;
+                    $('#formImgUrl').val(imgUrl);
+
+                    $('#imgPreview').attr('src', imgUrl);
+                    $('#imgPreviewArea').show();
+                    $('#noImgArea').hide();
+
+                    layer.msg('上传成功', {icon: 1});
+                } else {
+                    layer.msg(res.message || '上传失败', {icon: 2});
+                }
+            },
+            error: function() {
+                layer.closeAll('loading');
+                layer.msg('上传失败，请检查网络连接', {icon: 2});
+            }
+        });
+
+        // 删除图片按钮
+        $(document).on('click', '#removeImgBtn', function() {
+            $('#formImgUrl').val('');
+            $('#imgPreviewArea').hide();
+            $('#noImgArea').show();
+            layer.msg('已移除图片', {icon: 1});
+        });
+
+        // 新增消毒记录
+        $('#addDisinfectionBtn').click(function() {
+            resetForm();
+            form.render();
+
+            currentLayerIndex = layer.open({
+                type: 1,
+                title: '新增消毒记录',
+                area: ['550px', '80%'],
+                content: $('#disinfectionForm'),
+                btn: ['确认保存', '取消'],
+                yes: function(index, layero) {
+                    submitForm('add', null, index);
+                }
+            });
+        });
+
+        // 编辑消毒记录
+        $(document).on('click', '.edit-btn', function() {
+            var id = $(this).data('id');
+            console.log("编辑记录ID：" + id);
+
+            // 检查ID是否有效
+            if (!id || id === 'undefined' || id === 'null') {
+                layer.msg('记录ID无效', {icon: 2});
+                return;
+            }
+
+            $.ajax({
+                url: '/api/disinfection/' + id,
+                type: 'GET',
+                beforeSend: function() {
+                    layer.load(2);
+                },
+                success: function(res) {
+                    layer.closeAll('loading');
+                    console.log("详情响应：", res);
+                    if (res.code === 200) {
+                        fillForm(res.data);
+
+                        currentLayerIndex = layer.open({
+                            type: 1,
+                            title: '编辑消毒记录',
+                            area: ['550px', '80%'],
+                            content: $('#disinfectionForm'),
+                            btn: ['确认保存', '取消'],
+                            yes: function(index, layero) {
+                                submitForm('edit', id, index);
+                            }
+                        });
+                    } else {
+                        layer.msg(res.message || '获取详情失败', {icon: 2});
+                    }
+                },
+                error: function(xhr) {
+                    layer.closeAll('loading');
+                    layer.msg('请求失败：' + xhr.status, {icon: 2});
+                }
+            });
+        });
+
+        // 删除消毒记录
+        $(document).on('click', '.delete-btn', function() {
+            var id = $(this).data('id');
+
+            if (!id || id === 'undefined' || id === 'null') {
+                layer.msg('记录ID无效', {icon: 2});
+                return;
+            }
+
+            layer.confirm('确定要删除这条消毒记录吗？删除后不可恢复！', {
+                icon: 3,
+                title: '删除确认',
+                btn: ['确定删除', '取消']
+            }, function(index) {
+                $.ajax({
+                    url: '/api/disinfection/delete/' + id,
+                    type: 'DELETE',
+                    beforeSend: function() {
+                        layer.load(2);
+                    },
+                    success: function(res) {
+                        layer.closeAll('loading');
+                        if (res.code === 200) {
+                            layer.msg('删除成功', {icon: 1});
+                            disinfectionTable.reload();
+                        } else {
+                            layer.msg(res.message || '删除失败', {icon: 2});
+                        }
+                    },
+                    error: function(xhr) {
+                        layer.closeAll('loading');
+                        layer.msg('删除失败：' + xhr.status, {icon: 2});
+                    }
+                });
+                layer.close(index);
+            });
+        });
+
+        // 重置表单
+        function resetForm() {
+            $('#disinfectionId').val('');
+            $('#formCarId').val('');
+            $('#formDriverId').val('');
+            $('#formTaskId').val('');
+            $('#formDisinfectionType').val('');
+            $('#formLocation').val('');
+            $('#formDisinfectant').val('');
+            $('#formImgUrl').val('');
+            $('#formRemark').val('');
+
+            $('#imgPreviewArea').hide();
+            $('#noImgArea').show();
+        }
+
+        // 填充表单数据
+        function fillForm(data) {
+            // 关键修改：使用 disinfectionId 而不是 id
+            $('#disinfectionId').val(data.disinfectionId || data.id);
+            $('#formCarId').val(data.carId || '');
+            $('#formDriverId').val(data.driverId || '');
+            $('#formTaskId').val(data.taskId || '');
+            $('#formDisinfectionType').val(data.disinfectionType || '');
+            $('#formLocation').val(data.location || '');
+            $('#formDisinfectant').val(data.disinfectant || '');
+            $('#formImgUrl').val(data.imgUrl || '');
+            $('#formRemark').val(data.remark || '');
+
+            if (data.imgUrl && data.imgUrl.trim() !== '') {
+                var imgUrl = data.imgUrl;
+                if (!imgUrl.startsWith('http') && !imgUrl.startsWith('/img/')) {
+                    imgUrl = '/img/' + imgUrl;
+                }
+                $('#imgPreview').attr('src', imgUrl);
+                $('#imgPreviewArea').show();
+                $('#noImgArea').hide();
+            } else {
+                $('#imgPreviewArea').hide();
+                $('#noImgArea').show();
+            }
+
+            form.render();
+        }
+
+        // 提交表单
+        // 提交表单
+        function submitForm(action, id, layerIndex) {
+            var carId = $('#formCarId').val();
+            var disinfectionType = $('#formDisinfectionType').val();
+            var location = $('#formLocation').val();
+
+            if (!carId || carId.trim() === '') {
+                layer.msg('请输入车辆ID', {icon: 2});
+                $('#formCarId').focus();
+                return false;
+            }
+
+            if (!/^\d+$/.test(carId)) {
+                layer.msg('车辆ID必须是数字', {icon: 2});
+                $('#formCarId').focus();
+                return false;
+            }
+
+            if (!disinfectionType || disinfectionType.trim() === '') {
+                layer.msg('请选择消毒类型', {icon: 2});
+                $('#formDisinfectionType').focus();
+                return false;
+            }
+
+            if (!location || location.trim() === '') {
+                layer.msg('请输入消毒地点', {icon: 2});
+                $('#formLocation').focus();
+                return false;
+            }
+
+            // 修复：先定义 data 对象
+            var data = {
+                carId: parseInt(carId),
+                disinfectionType: disinfectionType,
+                location: location
+            };
+
+            var driverId = $('#formDriverId').val();
+            var taskId = $('#formTaskId').val();
+            var disinfectant = $('#formDisinfectant').val();
+            var imgUrl = $('#formImgUrl').val();
+            var remark = $('#formRemark').val();
+
+            if (driverId && driverId.trim() !== '' && /^\d+$/.test(driverId)) {
+                data.driverId = parseInt(driverId);
+            }
+
+            if (taskId && taskId.trim() !== '' && /^\d+$/.test(taskId)) {
+                data.taskId = parseInt(taskId);
+            }
+
+            if (disinfectant && disinfectant.trim() !== '') {
+                data.disinfectant = disinfectant;
+            }
+
+            if (imgUrl && imgUrl.trim() !== '') {
+                data.imgUrl = imgUrl;
+            }
+
+            if (remark && remark.trim() !== '') {
+                data.remark = remark;
+            }
+
+            // 编辑时需要ID
+            if (action === 'edit' && id) {
+                data.disinfectionId = parseInt(id);
+            }
+
+            console.log("提交数据：", data);
+
+            // 确定URL和请求类型
+            var url = action === 'add' ? '/api/disinfection/add' : '/api/disinfection/update';
+            var method = action === 'add' ? 'POST' : 'PUT';
+
+            $.ajax({
+                url: url,
+                type: method,
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                beforeSend: function() {
+                    layer.load(2, {time: 10*1000});
+                },
+                success: function(res) {
+                    layer.closeAll('loading');
+                    console.log("提交响应：", res);
+
+                    if (res.code === 200) {
+                        layer.msg(action === 'add' ? '新增成功' : '修改成功', {icon: 1});
+                        disinfectionTable.reload();
+                        layer.close(layerIndex);
+                    } else {
+                        layer.msg(res.message || '操作失败', {icon: 2});
+                    }
+                },
+                error: function(xhr, status, error) {
+                    layer.closeAll('loading');
+                    console.error("提交错误：", xhr, status, error);
+
+                    if (xhr.status === 415) {
+                        layer.msg('请求格式错误，请检查Content-Type设置', {icon: 2});
+                    } else if (xhr.status === 400) {
+                        layer.msg('请求参数错误，请检查数据格式', {icon: 2});
+                    } else if (xhr.status === 500) {
+                        layer.msg('服务器内部错误，请稍后重试', {icon: 2});
+                    } else {
+                        layer.msg('请求失败：' + xhr.status + ' - ' + error, {icon: 2});
+                    }
+                }
+            });
+
+            return false;
+        }
+        // 全局Token校验
+        $(function() {
+            var token = localStorage.getItem('token');
+            if (!token) {
+                layer.msg('请先登录系统', {icon: 2});
+                setTimeout(() => window.location.href = '/login.html', 1500);
+                return;
+            }
+
+            $.ajaxSetup({
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                },
+                error: function(xhr) {
+                    if (xhr.status === 401) {
+                        layer.msg('登录已过期，请重新登录', {icon: 2});
+                        localStorage.removeItem('token');
+                        setTimeout(() => window.location.href = '/login.html', 1500);
+                    }
+                }
+            });
+        });
+    });
+</script>
+</body>
+</html>

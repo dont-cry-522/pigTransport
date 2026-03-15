@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分配司机 - 生猪运输管理系统</title>
+    <link rel="stylesheet" href="/layui/css/layui.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+        }
+        .assign-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+            padding: 25px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .assign-header {
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        .assign-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .assign-title i {
+            color: #1E9FFF;
+        }
+        .vehicle-info {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 25px;
+        }
+        .info-row {
+            display: flex;
+            margin-bottom: 8px;
+        }
+        .info-label {
+            width: 80px;
+            color: #666;
+            font-weight: 500;
+        }
+        .info-value {
+            flex: 1;
+            color: #333;
+        }
+        .driver-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 25px;
+        }
+        .driver-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .driver-item:hover {
+            border-color: #1E9FFF;
+            background: #f0f9ff;
+        }
+        .driver-item.selected {
+            border-color: #1E9FFF;
+            background: #e6f7ff;
+        }
+        .driver-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #1E9FFF, #5FB878);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            margin-right: 15px;
+        }
+        .driver-details {
+            flex: 1;
+        }
+        .driver-name {
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+        .driver-phone {
+            font-size: 12px;
+            color: #666;
+        }
+        .driver-status {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+        .status-free {
+            background: #f0f9eb;
+            color: #52c41a;
+        }
+        .status-busy {
+            background: #fff7e6;
+            color: #fa8c16;
+        }
+        .assign-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .no-drivers {
+            text-align: center;
+            color: #999;
+            padding: 40px 20px;
+        }
+        .no-drivers i {
+            font-size: 40px;
+            margin-bottom: 15px;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body>
+<div class="assign-container">
+    <!-- 头部信息 -->
+    <div class="assign-header">
+        <div class="assign-title">
+            <i class="fas fa-user-tie"></i>
+            分配司机
+        </div>
+    </div>
+
+    <!-- 车辆信息 -->
+    <div class="vehicle-info">
+        <div class="info-row">
+            <div class="info-label">车牌号：</div>
+            <div class="info-value" id="vehiclePlate">加载中...</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">车型：</div>
+            <div class="info-value" id="vehicleModel">加载中...</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">当前状态：</div>
+            <div class="info-value">
+                <span id="vehicleStatus" class="layui-badge layui-bg-blue">加载中</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 司机列表 -->
+    <div class="driver-list" id="driverList">
+        <div class="no-drivers">
+            <i class="fas fa-user-slash"></i>
+            <p>正在加载司机列表...</p>
+        </div>
+    </div>
+
+    <!-- 操作按钮 -->
+    <div class="assign-actions">
+        <button type="button" class="layui-btn layui-btn-primary" onclick="cancelAssign()">
+            <i class="fas fa-times"></i> 取消
+        </button>
+        <button type="button" class="layui-btn layui-btn-normal" onclick="confirmAssign()">
+            <i class="fas fa-check"></i> 确认分配
+        </button>
+    </div>
+</div>
+
+<script src="/layui/layui.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script>
+    layui.use(['form'], function(){
+        var form = layui.form;
+
+        // 从URL获取车辆ID
+        var urlParams = new URLSearchParams(window.location.search);
+        var vehicleId = urlParams.get('vehicleId');
+
+        // 加载车辆信息
+        loadVehicleInfo(vehicleId);
+
+        // 加载司机列表
+        loadDrivers();
+    });
+
+    var selectedDriverId = null;
+    var selectedDriverName = null; // 新增：保存选中的司机姓名
+    var vehicleId = null;
+
+    // 加载车辆信息
+    function loadVehicleInfo(id) {
+        vehicleId = id;
+        $.ajax({
+            url: '/api/vehicle/detail?id=' + id,
+            type: 'GET',
+            success: function(res) {
+                if(res.code === 200) {
+                    var data = res.data;
+                    $('#vehiclePlate').text(data.licensePlate || '未知');
+                    $('#vehicleModel').text(data.model || '未知');
+
+                    // 更新状态显示
+                    var statusText = '', statusClass = '';
+                    switch(data.status) {
+                        case 'free': statusText = '空闲'; statusClass = 'layui-bg-green'; break;
+                        case 'transporting': statusText = '运输中'; statusClass = 'layui-bg-orange'; break;
+                        case 'maintenance': statusText = '维修中'; statusClass = 'layui-bg-red'; break;
+                        case 'resting': statusText = '休息中'; statusClass = 'layui-bg-cyan'; break; // 新增：休息中状态
+                        default: statusText = data.status; statusClass = 'layui-bg-blue';
+                    }
+                    $('#vehicleStatus').text(statusText).attr('class', 'layui-badge ' + statusClass);
+                }
+            },
+            error: function(xhr) {
+                layer.msg('车辆信息加载失败: ' + xhr.status, {icon: 2});
+                $('#vehiclePlate').text('加载失败');
+                $('#vehicleModel').text('加载失败');
+                $('#vehicleStatus').text('加载失败').attr('class', 'layui-badge layui-bg-red');
+            }
+        });
+    }
+
+    // 加载司机列表
+    function loadDrivers() {
+        $.ajax({
+            url: '/api/user/drivers',
+            type: 'GET',
+            success: function(res) {
+                if(res.code === 200 && res.data && res.data.length > 0) {
+                    var html = '';
+                    res.data.forEach(function(driver) {
+                        var statusText = driver.status === 'free' ? '空闲' : '忙碌';
+                        var statusClass = driver.status === 'free' ? 'status-free' : 'status-busy';
+                        // 兼容realName/name字段（防止字段名不一致）
+                        var driverName = driver.realName || driver.name || '未命名';
+
+                        html += `
+                            <div class="driver-item" data-id="${driver.userId || driver.id}" onclick="selectDriver(this, ${driver.userId || driver.id}, '${driverName}')">
+                                <div class="driver-avatar">
+                                    ${driverName.charAt(0).toUpperCase()}
+                                </div>
+                                <div class="driver-details">
+                                    <div class="driver-name">${driverName}</div>
+                                    <div class="driver-phone">
+                                        <i class="fas fa-phone"></i> ${driver.phone || '无'}
+                                    </div>
+                                </div>
+                                <div class="driver-status ${statusClass}">
+                                    ${statusText}
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    $('#driverList').html(html);
+                } else {
+                    $('#driverList').html(`
+                        <div class="no-drivers">
+                            <i class="fas fa-user-slash"></i>
+                            <p>暂无可用司机</p>
+                        </div>
+                    `);
+                }
+            },
+            error: function(xhr) {
+                layer.msg('司机列表加载失败: ' + xhr.status, {icon: 2});
+                $('#driverList').html(`
+                    <div class="no-drivers">
+                        <i class="fas fa-user-slash"></i>
+                        <p>司机列表加载失败</p>
+                    </div>
+                `);
+            }
+        });
+    }
+
+    // 选择司机 - 新增driverName参数
+    function selectDriver(element, driverId, driverName) {
+        // 移除之前的选择
+        $('.driver-item').removeClass('selected');
+        // 添加当前选择
+        $(element).addClass('selected');
+        // 保存选择的司机ID和姓名
+        selectedDriverId = driverId;
+        selectedDriverName = driverName;
+    }
+
+    // 确认分配
+    function confirmAssign() {
+        // 校验：司机ID和姓名都不能为空
+        if(!selectedDriverId) {
+            layer.msg('请选择一位司机', {icon: 2});
+            return;
+        }
+        if(!selectedDriverName || selectedDriverName === '未命名') {
+            layer.msg('司机姓名不能为空', {icon: 2});
+            return;
+        }
+
+        $.ajax({
+            url: '/api/vehicle/assignDriver',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                vehicleId: vehicleId,
+                driverId: selectedDriverId,
+                driverName: selectedDriverName // 新增：传递司机姓名到后端
+            }),
+            success: function(res) {
+                if(res.code === 200) {
+                    layer.msg('分配成功', {icon: 1});
+                    // 通知父页面刷新
+                    if(parent.refreshTable) {
+                        parent.refreshTable();
+                    }
+                    // 关闭弹窗
+                    var index = parent.layer.getFrameIndex(window.name);
+                    parent.layer.close(index);
+                } else {
+                    layer.msg(res.msg || '分配失败', {icon: 2});
+                }
+            },
+            error: function(xhr) {
+                layer.msg('请求失败: ' + xhr.status, {icon: 2});
+            }
+        });
+    }
+
+    // 取消分配
+    function cancelAssign() {
+        var index = parent.layer.getFrameIndex(window.name);
+        parent.layer.close(index);
+    }
+
+    // 定义父页面调用的函数（用于iframe调用）
+    window.assignDriver = confirmAssign;
+</script>
+</body>
+</html>

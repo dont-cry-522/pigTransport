@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>位置签到管理 - 生猪运输管理系统</title>
+    <link rel="stylesheet" href="/layui/css/layui.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* 其他样式保持不变 */
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+        }
+        .page-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+            padding: 25px;
+        }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .page-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .page-title i {
+            color: #FFB800;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+        .search-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .search-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .search-item label {
+            color: #666;
+            font-size: 14px;
+        }
+        .layui-table {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .layui-table th {
+            background: #f8f9fa;
+            font-weight: 500;
+        }
+        .layui-btn-sm {
+            border-radius: 6px;
+        }
+        .location-tag {
+            color: #1E9FFF;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        .required-star {
+            color: red;
+            margin-right: 4px;
+            font-size: 12px;
+        }
+        .form-container {
+            padding: 15px 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .form-container::-webkit-scrollbar {
+            width: 4px;
+        }
+        .form-container::-webkit-scrollbar-thumb {
+            background-color: #ddd;
+            border-radius: 2px;
+        }
+        .compact-form .layui-form-item {
+            margin-bottom: 12px;
+        }
+        .compact-form .layui-form-label {
+            width: 70px;
+            padding: 5px 15px 5px 0;
+            font-size: 13px;
+        }
+        .compact-form .layui-input-block {
+            margin-left: 85px;
+            min-height: 30px;
+        }
+        .compact-form .layui-input,
+        .compact-form .layui-textarea,
+        .compact-form .layui-select {
+            height: 32px;
+            line-height: 32px;
+            font-size: 13px;
+        }
+        .compact-form .layui-textarea {
+            height: 70px;
+            min-height: 70px;
+            line-height: 1.4;
+            padding: 5px 10px;
+        }
+        .compact-form .coordinate-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .compact-form .coordinate-input {
+            flex: 1;
+        }
+        .compact-form .get-location-btn {
+            white-space: nowrap;
+            height: 32px;
+            line-height: 32px;
+            padding: 0 10px;
+            font-size: 12px;
+        }
+        .compact-form .location-preview {
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 3px;
+            margin-top: 5px;
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+        }
+        .compact-form .location-preview p {
+            margin: 3px 0;
+        }
+        .compact-form .layui-form-mid {
+            font-size: 12px;
+            color: #999;
+            padding-top: 2px;
+        }
+    </style>
+</head>
+<body>
+<div class="page-container">
+    <!-- 页面头部 -->
+    <div class="page-header">
+        <div class="page-title">
+            <i class="fas fa-map-marker-alt"></i>
+            位置签到管理
+        </div>
+        <div class="btn-group">
+            <button class="layui-btn layui-btn-sm layui-btn-normal" id="addLocationBtn">
+                <i class="fas fa-plus"></i> 新增签到
+            </button>
+        </div>
+    </div>
+
+    <!-- 搜索栏 -->
+    <div class="search-bar">
+        <div class="search-item">
+            <label for="taskId">关联任务ID：</label>
+            <input type="text" id="taskId" class="layui-input" placeholder="请输入任务ID" style="width: 150px;">
+        </div>
+        <div class="search-item">
+            <label for="driverId">司机ID：</label>
+            <input type="text" id="driverId" class="layui-input" placeholder="请输入司机ID" style="width: 150px;">
+        </div>
+        <div class="search-item">
+            <label for="signDate">签到日期：</label>
+            <input type="text" id="signDate" class="layui-input" placeholder="选择日期" style="width: 180px;">
+        </div>
+        <div class="search-item">
+            <button class="layui-btn layui-btn-sm" id="searchBtn">
+                <i class="fas fa-search"></i> 搜索
+            </button>
+            <button class="layui-btn layui-btn-sm layui-btn-primary" id="resetBtn">
+                <i class="fas fa-redo"></i> 重置
+            </button>
+        </div>
+    </div>
+
+    <!-- 表格区域 -->
+    <table class="layui-table" id="locationTable" lay-filter="locationTable"></table>
+</div>
+
+<!-- 新增/编辑弹窗 -->
+<div id="locationForm" style="display: none;">
+    <div class="form-container compact-form">
+        <input type="hidden" id="signId">
+        <div class="layui-form-item">
+            <label class="layui-form-label"><span class="required-star">*</span>任务ID</label>
+            <div class="layui-input-block">
+                <input type="text" id="formTaskId" lay-verify="required|number" placeholder="请输入任务ID" class="layui-input">
+                <div class="layui-form-mid">必须为数字</div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label"><span class="required-star">*</span>司机ID</label>
+            <div class="layui-input-block">
+                <input type="text" id="formDriverId" lay-verify="required|number" placeholder="请输入司机ID" class="layui-input">
+                <div class="layui-form-mid">必须为数字</div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">司机姓名</label>
+            <div class="layui-input-block">
+                <input type="text" id="formDriverName" placeholder="请输入司机姓名" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">车牌号</label>
+            <div class="layui-input-block">
+                <input type="text" id="formLicensePlate" placeholder="请输入车牌号" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label"><span class="required-star">*</span>经纬度</label>
+            <div class="layui-input-block">
+                <div class="coordinate-group">
+                    <input type="text" id="formLongitude" lay-verify="required" placeholder="经度" class="layui-input coordinate-input" style="width: 100px;">
+                    <span style="color: #999;">,</span>
+                    <input type="text" id="formLatitude" lay-verify="required" placeholder="纬度" class="layui-input coordinate-input" style="width: 100px;">
+                    <button type="button" class="layui-btn layui-btn-primary get-location-btn" id="getLocationBtn">
+                        <i class="fas fa-location-arrow"></i>
+                    </button>
+                </div>
+                <div class="layui-form-mid">经度(-180~180)，纬度(-90~90)</div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">位置名称</label>
+            <div class="layui-input-block">
+                <input type="text" id="formLocation" placeholder="位置或详细地址" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">位置预览</label>
+            <div class="layui-input-block">
+                <div id="locationPreview" class="location-preview">
+                    请输入经纬度后显示位置信息
+                </div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">签到备注</label>
+            <div class="layui-input-block">
+                <textarea id="formRemark" placeholder="请输入备注信息" class="layui-textarea" rows="2"></textarea>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 位置详情弹窗 -->
+<div id="locationDetailModal" style="display: none; padding: 15px;">
+    <div style="margin-bottom: 10px;">
+        <h4 id="detailTitle" style="margin-bottom: 5px; color: #333;">位置详情</h4>
+    </div>
+    <div style="line-height: 1.6; font-size: 13px;">
+        <p><strong>经度：</strong><span id="detailLng"></span></p>
+        <p><strong>纬度：</strong><span id="detailLat"></span></p>
+        <p><strong>位置：</strong><span id="detailLocation"></span></p>
+        <p><strong>签到时间：</strong><span id="detailTime"></span></p>
+        <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 3px; text-align: center;">
+            <i class="fas fa-map-marked-alt" style="color: #1E9FFF; font-size: 20px;"></i>
+            <p style="margin-top: 5px; color: #666; font-size: 12px;">（实际项目中可集成百度/高德地图）</p>
+        </div>
+    </div>
+</div>
+
+<script src="/layui/layui.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script>
+    layui.use(['table', 'form', 'layer', 'laydate'], function() {
+        var table = layui.table;
+        var form = layui.form;
+        var layer = layui.layer;
+        var laydate = layui.laydate;
+
+        var currentLayerIndex = null;
+
+        // 渲染日期选择器
+        laydate.render({elem: '#signDate', range: false});
+
+        // 表格渲染
+        var locationTable = table.render({
+            elem: '#locationTable',
+            url: '/api/location/list',
+            method: 'GET',
+            page: true,
+            limit: 10,
+            limits: [10, 20, 30],
+            cols: [[
+                {field: 'signId', title: 'ID', width: 80, align: 'center'},
+                {field: 'taskId', title: '任务ID', width: 100, align: 'center'},
+                {field: 'driverId', title: '司机ID', width: 90, align: 'center'},
+                {field: 'driverName', title: '司机姓名', width: 90, align: 'center'},
+                {field: 'licensePlate', title: '车牌号', width: 100, align: 'center'},
+                {field: 'longitude', title: '经度', width: 100, align: 'center'},
+                {field: 'latitude', title: '纬度', width: 100, align: 'center'},
+                {field: 'location', title: '位置信息', width: 120, templet: function(d) {
+                        return d.location ?
+                            '<span class="location-tag" onclick="viewLocationDetail(' + d.signId + ')">' + (d.location.length > 8 ? d.location.substring(0, 8) + '...' : d.location) + '</span>' :
+                            '<span class="location-tag" onclick="viewLocationDetail(' + d.signId + ')">查看位置</span>';
+                    }},
+                {field: 'signTime', title: '签到时间', width: 150, align: 'center', templet: function(d) {
+                        return formatDateTime(d.signTime || d.createTime);
+                    }},
+                {field: 'remark', title: '备注', width: 100, templet: function(d) {
+                        return d.remark ? (d.remark.length > 6 ? d.remark.substring(0, 6) + '...' : d.remark) : '';
+                    }},
+                {title: '操作', width: 110, align: 'center', templet: function(d) {
+                        return '<button class="layui-btn layui-btn-xs layui-btn-normal edit-btn" data-id="' + d.signId + '" title="编辑"><i class="fas fa-edit"></i></button>' +
+                            '<button class="layui-btn layui-btn-xs layui-btn-danger delete-btn" data-id="' + d.signId + '" title="删除" style="margin-left:5px;"><i class="fas fa-trash"></i></button>';
+                    }}
+            ]],
+            parseData: function(res) {
+                return {
+                    "code": res.code || 0,
+                    "msg": res.message || "",
+                    "count": res.data ? (res.data.total || res.data.length || 0) : 0,
+                    "data": res.data ? (res.data.records || res.data.list || res.data) : []
+                };
+            }
+        });
+
+        // 日期格式化函数
+        function formatDateTime(dateStr) {
+            if (!dateStr) return '';
+            try {
+                var date = new Date(dateStr);
+                return date.getFullYear() + '-' +
+                    padZero(date.getMonth() + 1) + '-' +
+                    padZero(date.getDate()) + ' ' +
+                    padZero(date.getHours()) + ':' +
+                    padZero(date.getMinutes());
+            } catch (e) {
+                return dateStr;
+            }
+        }
+
+        function padZero(num) {
+            return num < 10 ? '0' + num : num;
+        }
+
+        // 查看位置详情
+        window.viewLocationDetail = function(signId) {
+            $.ajax({
+                url: '/api/location/' + signId,
+                type: 'GET',
+                success: function(res) {
+                    if (res.code === 200 && res.data) {
+                        var data = res.data;
+                        $('#detailLng').text(data.longitude);
+                        $('#detailLat').text(data.latitude);
+                        $('#detailLocation').text(data.location || '未知位置');
+                        $('#detailTime').text(formatDateTime(data.signTime || data.createTime));
+
+                        layer.open({
+                            type: 1,
+                            title: '位置详情',
+                            area: ['350px', '300px'],
+                            content: $('#locationDetailModal')
+                        });
+                    } else {
+                        layer.msg(res.message || '获取详情失败', {icon: 2});
+                    }
+                },
+                error: function(xhr) {
+                    layer.msg('请求失败：' + xhr.status, {icon: 2});
+                }
+            });
+        };
+
+        // 获取当前位置按钮
+        $('#getLocationBtn').click(function() {
+            if (navigator.geolocation) {
+                layer.load(2, {text: '获取位置中...'});
+
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        layer.closeAll('loading');
+                        var lng = position.coords.longitude;
+                        var lat = position.coords.latitude;
+
+                        $('#formLongitude').val(lng.toFixed(6));
+                        $('#formLatitude').val(lat.toFixed(6));
+
+                        updateLocationPreview(lng, lat);
+
+                        layer.msg('位置获取成功', {icon: 1});
+                    },
+                    function(error) {
+                        layer.closeAll('loading');
+                        var errorMsg = '获取失败';
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMsg = '请允许位置权限';
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMsg = '位置不可用';
+                                break;
+                            case error.TIMEOUT:
+                                errorMsg = '获取超时';
+                                break;
+                        }
+                        layer.msg(errorMsg, {icon: 2});
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 5000
+                    }
+                );
+            } else {
+                layer.msg('浏览器不支持定位', {icon: 2});
+            }
+        });
+
+        // 更新位置预览
+        function updateLocationPreview(lng, lat) {
+            if (lng && lat) {
+                var mapLink = `https://maps.google.com/?q=${lat},${lng}`;
+                $('#locationPreview').html(`
+                    <p><strong>坐标：</strong>${lng}, ${lat}</p>
+                    <p><strong>地图：</strong><a href="${mapLink}" target="_blank" style="color: #1E9FFF; font-size: 11px;">Google地图</a></p>
+                `);
+            }
+        }
+
+        // 经纬度输入变化时更新预览
+        $('#formLongitude, #formLatitude').on('input', function() {
+            var lng = $('#formLongitude').val();
+            var lat = $('#formLatitude').val();
+
+            if (lng && lat && !isNaN(lng) && !isNaN(lat)) {
+                updateLocationPreview(lng, lat);
+            } else {
+                $('#locationPreview').html('请输入经纬度后显示位置信息');
+            }
+        });
+
+        // 搜索按钮
+        $('#searchBtn').click(function() {
+            locationTable.reload({
+                where: {
+                    taskId: $('#taskId').val(),
+                    driverId: $('#driverId').val(),
+                    date: $('#signDate').val()
+                },
+                page: {curr: 1}
+            });
+        });
+
+        // 重置按钮
+        $('#resetBtn').click(function() {
+            $('#taskId').val('');
+            $('#driverId').val('');
+            $('#signDate').val('');
+            locationTable.reload({where: {}, page: {curr: 1}});
+        });
+
+        // 新增签到 - 缩小弹窗
+        $('#addLocationBtn').click(function() {
+            resetForm();
+            form.render();
+
+            currentLayerIndex = layer.open({
+                type: 1,
+                title: '新增位置签到',
+                area: ['400px', '500px'], // 缩小弹窗尺寸
+                content: $('#locationForm'),
+                btn: ['保存', '取消'],
+                btnAlign: 'c',
+                yes: function(index, layero) {
+                    submitForm('add', null, index);
+                }
+            });
+        });
+
+        // 编辑签到记录
+        $(document).on('click', '.edit-btn', function() {
+            var id = $(this).data('id');
+            if (!id) {
+                layer.msg('记录ID无效', {icon: 2});
+                return;
+            }
+
+            $.ajax({
+                url: '/api/location/' + id,
+                type: 'GET',
+                beforeSend: function() {
+                    layer.load(1);
+                },
+                success: function(res) {
+                    layer.closeAll('loading');
+                    if (res.code === 200) {
+                        fillForm(res.data);
+
+                        currentLayerIndex = layer.open({
+                            type: 1,
+                            title: '编辑位置签到',
+                            area: ['400px', '500px'], // 缩小弹窗尺寸
+                            content: $('#locationForm'),
+                            btn: ['保存', '取消'],
+                            btnAlign: 'c',
+                            yes: function(index, layero) {
+                                submitForm('edit', id, index);
+                            }
+                        });
+                    } else {
+                        layer.msg(res.message || '获取详情失败', {icon: 2});
+                    }
+                },
+                error: function(xhr) {
+                    layer.closeAll('loading');
+                    layer.msg('请求失败：' + xhr.status, {icon: 2});
+                }
+            });
+        });
+
+        // 删除签到记录
+        $(document).on('click', '.delete-btn', function() {
+            var id = $(this).data('id');
+
+            if (!id) {
+                layer.msg('记录ID无效', {icon: 2});
+                return;
+            }
+
+            layer.confirm('确定要删除这条签到记录吗？', {
+                icon: 3,
+                title: '删除确认',
+                btn: ['确定', '取消'],
+                btnAlign: 'c'
+            }, function(index) {
+                $.ajax({
+                    url: '/api/location/delete/' + id,
+                    type: 'DELETE',
+                    beforeSend: function() {
+                        layer.load(1);
+                    },
+                    success: function(res) {
+                        layer.closeAll('loading');
+                        if (res.code === 200) {
+                            layer.msg('删除成功', {icon: 1});
+                            locationTable.reload();
+                        } else {
+                            layer.msg(res.message || '删除失败', {icon: 2});
+                        }
+                    },
+                    error: function(xhr) {
+                        layer.closeAll('loading');
+                        layer.msg('删除失败：' + xhr.status, {icon: 2});
+                    }
+                });
+                layer.close(index);
+            });
+        });
+
+        // 重置表单
+        function resetForm() {
+            $('#signId').val('');
+            $('#formTaskId').val('');
+            $('#formDriverId').val('');
+            $('#formDriverName').val('');
+            $('#formLicensePlate').val('');
+            $('#formLongitude').val('');
+            $('#formLatitude').val('');
+            $('#formLocation').val('');
+            $('#formRemark').val('');
+
+            $('#locationPreview').html('请输入经纬度后显示位置信息');
+        }
+
+        // 填充表单数据
+        function fillForm(data) {
+            $('#signId').val(data.signId || data.id);
+            $('#formTaskId').val(data.taskId || '');
+            $('#formDriverId').val(data.driverId || '');
+            $('#formDriverName').val(data.driverName || '');
+            $('#formLicensePlate').val(data.licensePlate || '');
+            $('#formLongitude').val(data.longitude || '');
+            $('#formLatitude').val(data.latitude || '');
+            $('#formLocation').val(data.location || '');
+            $('#formRemark').val(data.remark || '');
+
+            if (data.longitude && data.latitude) {
+                updateLocationPreview(data.longitude, data.latitude);
+            }
+
+            form.render();
+        }
+
+        // 提交表单
+        function submitForm(action, id, layerIndex) {
+            var taskId = $('#formTaskId').val();
+            var driverId = $('#formDriverId').val();
+            var longitude = $('#formLongitude').val();
+            var latitude = $('#formLatitude').val();
+
+            // 表单验证
+            if (!taskId || !/^\d+$/.test(taskId)) {
+                layer.msg('请输入有效的任务ID', {icon: 2});
+                $('#formTaskId').focus();
+                return false;
+            }
+
+            if (!driverId || !/^\d+$/.test(driverId)) {
+                layer.msg('请输入有效的司机ID', {icon: 2});
+                $('#formDriverId').focus();
+                return false;
+            }
+
+            if (!longitude || isNaN(longitude) || longitude < -180 || longitude > 180) {
+                layer.msg('请输入有效的经度(-180~180)', {icon: 2});
+                $('#formLongitude').focus();
+                return false;
+            }
+
+            if (!latitude || isNaN(latitude) || latitude < -90 || latitude > 90) {
+                layer.msg('请输入有效的纬度(-90~90)', {icon: 2});
+                $('#formLatitude').focus();
+                return false;
+            }
+
+            // 构建数据
+            var data = {
+                taskId: parseInt(taskId),
+                driverId: parseInt(driverId),
+                longitude: parseFloat(longitude),
+                latitude: parseFloat(latitude)
+            };
+
+            var driverName = $('#formDriverName').val();
+            var licensePlate = $('#formLicensePlate').val();
+            var location = $('#formLocation').val();
+            var remark = $('#formRemark').val();
+
+            if (driverName && driverName.trim() !== '') {
+                data.driverName = driverName;
+            }
+            if (licensePlate && licensePlate.trim() !== '') {
+                data.licensePlate = licensePlate;
+            }
+            if (location && location.trim() !== '') {
+                data.location = location;
+            }
+            if (remark && remark.trim() !== '') {
+                data.remark = remark;
+            }
+
+            // 编辑时需要ID
+            if (action === 'edit' && id) {
+                data.signId = parseInt(id);
+            }
+
+            console.log("提交数据：", data);
+
+            // 确定URL和请求类型
+            var url = action === 'add' ? '/api/location/add' : '/api/location/update';
+            var method = action === 'add' ? 'POST' : 'PUT';
+
+            $.ajax({
+                url: url,
+                type: method,
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                beforeSend: function() {
+                    layer.load(1);
+                },
+                success: function(res) {
+                    layer.closeAll('loading');
+                    if (res.code === 200) {
+                        layer.msg(action === 'add' ? '新增成功' : '修改成功', {icon: 1});
+                        locationTable.reload();
+                        layer.close(layerIndex);
+                    } else {
+                        layer.msg(res.message || '操作失败', {icon: 2});
+                    }
+                },
+                error: function(xhr) {
+                    layer.closeAll('loading');
+                    layer.msg('请求失败：' + xhr.status, {icon: 2});
+                }
+            });
+
+            return false;
+        }
+
+        // 全局Token校验
+        $(function() {
+            var token = localStorage.getItem('token');
+            if (!token) {
+                layer.msg('请先登录系统', {icon: 2});
+                setTimeout(() => window.location.href = '/login.html', 1500);
+                return;
+            }
+
+            $.ajaxSetup({
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                },
+                error: function(xhr) {
+                    if (xhr.status === 401) {
+                        layer.msg('登录已过期，请重新登录', {icon: 2});
+                        localStorage.removeItem('token');
+                        setTimeout(() => window.location.href = '/login.html', 1500);
+                    }
+                }
+            });
+        });
+    });
+</script>
+</body>
+</html>

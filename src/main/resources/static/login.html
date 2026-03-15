@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 生猪运输管理系统</title>
+    <link rel="stylesheet" href="/layui/css/layui.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .login-wrapper {
+            width: 100%;
+            max-width: 420px;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px 35px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.5s ease;
+        }
+
+        /* 登录成功动画 */
+        .login-card.success {
+            transform: scale(0.95);
+            opacity: 0.8;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo-icon {
+            font-size: 64px;
+            color: #5FB878;
+            display: block;
+            margin-bottom: 15px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .login-header h1 {
+            color: #333;
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #5FB878, #1E9FFF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .login-header p {
+            color: #666;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #555;
+            font-size: 14px;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .input-with-icon {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            font-size: 18px;
+        }
+
+        .layui-input {
+            width: 100%;
+            height: 48px;
+            padding: 0 15px 0 45px;
+            border: 2px solid #e6e6e6;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s;
+        }
+
+        .layui-input:focus {
+            border-color: #5FB878;
+            box-shadow: 0 0 0 3px rgba(95, 184, 120, 0.1);
+        }
+
+        .login-btn {
+            width: 100%;
+            height: 52px;
+            background: linear-gradient(45deg, #5FB878, #4CAF50);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(95, 184, 120, 0.3);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .test-accounts {
+            margin-top: 25px;
+            padding: 15px;
+            background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+            border-radius: 10px;
+            border-left: 4px solid #1E9FFF;
+        }
+
+        .test-accounts h4 {
+            color: #333;
+            font-size: 14px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .test-accounts ul {
+            list-style: none;
+            padding-left: 5px;
+        }
+
+        .test-accounts li {
+            color: #666;
+            font-size: 13px;
+            padding: 3px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .test-accounts li::before {
+            content: "👉";
+            font-size: 12px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 13px;
+        }
+
+        .footer a {
+            color: white;
+            text-decoration: none;
+            transition: opacity 0.3s;
+        }
+
+        .footer a:hover {
+            opacity: 0.8;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 错误抖动动画 */
+        .error-shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translateX(-1px); }
+            20%, 80% { transform: translateX(2px); }
+            30%, 50%, 70% { transform: translateX(-2px); }
+            40%, 60% { transform: translateX(2px); }
+        }
+
+        /* 登录成功过渡动画 */
+        .success-transition {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(95, 184, 120, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .success-transition.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .success-icon {
+            font-size: 80px;
+            color: #5FB878;
+            animation: scaleIn 0.8s ease-out;
+        }
+
+        @keyframes scaleIn {
+            0% { transform: scale(0); }
+            70% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 30px 25px;
+            }
+
+            .login-header h1 {
+                font-size: 24px;
+            }
+
+            .logo-icon {
+                font-size: 56px;
+            }
+        }
+    </style>
+</head>
+<body>
+<!-- 登录成功过渡层 -->
+<div class="success-transition" id="successTransition">
+    <div class="success-icon">✅</div>
+</div>
+
+<div class="login-wrapper">
+    <div class="login-card" id="loginCard">
+        <div class="login-header">
+            <span class="logo-icon">🐷</span>
+            <h1>生猪运输管理系统</h1>
+            <p>多角色协同管理平台</p>
+        </div>
+
+        <form id="login-form">
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <div class="input-with-icon">
+                    <span class="input-icon">👤</span>
+                    <input type="text" id="username" name="username"
+                           class="layui-input"
+                           placeholder="请输入用户名"
+                           required
+                           autocomplete="username">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">密码</label>
+                <div class="input-with-icon">
+                    <span class="input-icon">🔒</span>
+                    <input type="password" id="password" name="password"
+                           class="layui-input"
+                           placeholder="请输入密码"
+                           required
+                           autocomplete="current-password">
+                </div>
+            </div>
+
+            <button type="submit" class="login-btn" id="loginBtn">
+                登录系统
+            </button>
+
+            <div class="test-accounts">
+                <h4><span>💡</span> 测试账号</h4>
+                <ul>
+                    <li>管理员：admin / 123456</li>
+                    <li>养殖户：farmer1 / 123456</li>
+                    <li>司机：driver1 / 123456</li>
+                </ul>
+            </div>
+        </form>
+    </div>
+
+    <div class="footer">
+        <p>© 2026 生猪运输管理系统 - 毕业设计项目 | 基于 Spring Boot + LayUI</p>
+    </div>
+</div>
+
+<script src="/layui/layui.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script>
+    layui.use(['form', 'layer'], function(){
+        var form = layui.form;
+        var layer = layui.layer;
+
+        // 美化输入框焦点效果
+        $('.layui-input').on('focus', function(){
+            $(this).parent().find('.input-icon').css('color', '#5FB878');
+        }).on('blur', function(){
+            $(this).parent().find('.input-icon').css('color', '#999');
+        });
+
+        // 表单提交
+        $('#login-form').on('submit', function(e){
+            e.preventDefault();
+            login();
+        });
+
+        // 登录按钮点击
+        $('#loginBtn').click(function(e){
+            if(e.type === 'click') { // 防止重复触发
+                e.preventDefault();
+                login();
+            }
+        });
+
+        // 登录核心逻辑
+        function login() {
+            var username = $('#username').val().trim();
+            var password = $('#password').val();
+
+            if(!username || !password) {
+                layer.msg('请填写完整的登录信息', {icon: 2});
+                $('#loginCard').addClass('error-shake');
+                setTimeout(() => $('#loginCard').removeClass('error-shake'), 500);
+                return;
+            }
+
+            var loading = layer.load(2, {
+                shade: [0.3, '#fff']
+            });
+
+            $.ajax({
+                url: '/api/users/login',
+                type: 'POST',
+                data: {
+                    username: username,
+                    password: password
+                },
+                dataType: 'json',
+                success: function(res) {
+                    layer.close(loading);
+
+                    if(res.code === 200) {
+                        // 存储Token（核心修改：Token认证）
+                        localStorage.setItem('token', res.data.token);
+                        localStorage.setItem('userInfo', JSON.stringify(res.data.user));
+
+                        // 显示成功动画
+                        $('#loginCard').addClass('success');
+                        $('#successTransition').addClass('show');
+
+                        // 友好的延迟跳转（非瞬时）
+                        layer.msg('🎉 登录成功！即将进入系统', {
+                            icon: 1,
+                            time: 1500
+                        });
+
+                        setTimeout(() => {
+                            window.location.href = '/index.html';
+                        }, 1800); // 1.8秒后跳转，有足够的动画展示时间
+                    } else {
+                        layer.msg(res.msg || '登录失败', {icon: 2});
+                        $('#loginCard').addClass('error-shake');
+                        setTimeout(() => $('#loginCard').removeClass('error-shake'), 500);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    layer.close(loading);
+                    console.error('登录请求失败：', xhr.status, error);
+                    layer.msg('服务器错误，请稍后重试', {icon: 2});
+                    $('#loginCard').addClass('error-shake');
+                    setTimeout(() => $('#loginCard').removeClass('error-shake'), 500);
+                }
+            });
+        }
+
+        // 回车登录
+        $(document).keydown(function(e){
+            if(e.keyCode === 13 && ($('#username').is(':focus') || $('#password').is(':focus'))){
+                login();
+            }
+        });
+
+        // 自动聚焦用户名输入框
+        setTimeout(function(){
+            $('#username').focus();
+        }, 300);
+    });
+</script>
+</body>
+</html>

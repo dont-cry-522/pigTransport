@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生猪批次管理 - 生猪运输管理系统</title>
+    <link rel="stylesheet" href="/layui/css/layui.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+        }
+        .page-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+            padding: 25px;
+        }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .page-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .page-title i {
+            color: #5FB878;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+        .search-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .search-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .search-item label {
+            color: #666;
+            font-size: 14px;
+        }
+        .layui-table {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .layui-table th {
+            background: #f8f9fa;
+            font-weight: 500;
+        }
+        .layui-btn-sm {
+            border-radius: 6px;
+        }
+        /* 新增报表容器样式 */
+        .report-container {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .report-card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.08);
+            padding: 15px;
+        }
+        #batchReportChart {
+            width: 100%;
+            height: 400px;
+        }
+    </style>
+</head>
+<body>
+<div class="page-container">
+    <!-- 页面头部 -->
+    <div class="page-header">
+        <div class="page-title">
+            <i class="fas fa-piggy-bank"></i>
+            生猪批次管理
+        </div>
+        <div class="btn-group">
+            <button class="layui-btn layui-btn-sm layui-btn-normal" id="addBatchBtn">
+                <i class="fas fa-plus"></i> 新增批次
+            </button>
+            <button class="layui-btn layui-btn-sm layui-btn-warm" id="exportBatchBtn">
+                <i class="fas fa-file-excel"></i> 导出数据
+            </button>
+        </div>
+    </div>
+
+    <!-- 搜索栏 -->
+    <div class="search-bar">
+        <div class="search-item">
+            <label for="batchCode">批次编号：</label>
+            <input type="text" id="batchCode" class="layui-input" placeholder="请输入批次编号" style="width: 180px;">
+        </div>
+        <div class="search-item">
+            <label for="breed">生猪品种：</label>
+            <select id="breed" class="layui-select" style="width: 150px;">
+                <option value="">全部品种</option>
+                <option value="大白猪">大白猪</option>
+                <option value="长白猪">长白猪</option>
+                <option value="杜洛克">杜洛克</option>
+                <option value="约克夏">约克夏</option>
+                <option value="皮特兰">皮特兰</option>
+            </select>
+        </div>
+        <div class="search-item">
+            <label for="batchStatus">批次状态：</label>
+            <select id="batchStatus" class="layui-select" style="width: 120px;">
+                <option value="">全部状态</option>
+                <option value="available">待运输</option>
+                <option value="transported">已运输</option>
+            </select>
+        </div>
+        <div class="search-item">
+            <button class="layui-btn layui-btn-sm" id="searchBtn">
+                <i class="fas fa-search"></i> 搜索
+            </button>
+            <button class="layui-btn layui-btn-sm layui-btn-primary" id="resetBtn">
+                <i class="fas fa-redo"></i> 重置
+            </button>
+        </div>
+    </div>
+
+    <!-- 表格区域 -->
+    <table class="layui-table" id="batchTable" lay-filter="batchTable"></table>
+
+    <!-- 新增报表区域 -->
+    <div class="report-container">
+        <div class="page-title" style="font-size: 16px; margin-bottom: 15px;">
+            <i class="fas fa-chart-bar"></i>
+            批次数据报表
+        </div>
+        <div class="report-card">
+            <div id="batchReportChart"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 新增/编辑弹窗 -->
+<div id="batchForm" style="display: none; padding: 20px;">
+    <input type="hidden" id="batchId">
+    <div class="layui-form-item">
+        <label class="layui-form-label">批次编号</label>
+        <div class="layui-input-block">
+            <input type="text" id="formBatchCode" lay-verify="required" placeholder="请输入批次编号" class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">生猪品种</label>
+        <div class="layui-input-block">
+            <select id="formBreed" lay-verify="required" class="layui-select">
+                <option value="">请选择品种</option>
+                <option value="大白猪">大白猪</option>
+                <option value="长白猪">长白猪</option>
+                <option value="杜洛克">杜洛克</option>
+                <option value="约克夏">约克夏</option>
+                <option value="皮特兰">皮特兰</option>
+            </select>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">生猪数量</label>
+        <div class="layui-input-block">
+            <input type="number" id="formCount" lay-verify="required|number" placeholder="请输入数量" class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">来源地</label>
+        <div class="layui-input-block">
+            <input type="text" id="formSource" placeholder="请输入来源地" class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">批次状态</label>
+        <div class="layui-input-block">
+            <select id="formStatus" lay-verify="required" class="layui-select">
+                <option value="available">待运输</option>
+                <option value="transported">已运输</option>
+            </select>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">备注信息</label>
+        <div class="layui-input-block">
+            <textarea id="formRemark" placeholder="请输入备注" class="layui-textarea"></textarea>
+        </div>
+    </div>
+</div>
+
+<script src="/layui/layui.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<!-- 引入ECharts -->
+<script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+<script>
+    // 全局变量，用于存储表格实例
+    var batchTableInstance;
+
+    layui.use(['table', 'form', 'layer', 'laydate'], function() {
+        var table = layui.table;
+        var form = layui.form;
+        var layer = layui.layer;
+        var laydate = layui.laydate;
+
+        // 表格渲染 - 修改字段名匹配后端
+        batchTableInstance = table.render({
+            elem: '#batchTable',
+            url: '/api/batch/list',
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+            },
+            page: true,
+            limit: 10,
+            limits: [10, 20, 30],
+            cols: [[
+                {field: 'id', title: 'ID', width: 80, align: 'center'},
+                {field: 'batchNo', title: '批次编号', minWidth: 120}, // 改为batchNo
+                {field: 'variety', title: '生猪品种', width: 100, align: 'center'}, // 改为variety
+                {field: 'quantity', title: '生猪数量', width: 100, align: 'center'}, // 改为quantity
+                {field: 'source', title: '来源地', width: 120, align: 'center'},
+                {field: 'status', title: '批次状态', width: 100, align: 'center', templet: function(d) {
+                        var statusMap = {'available': '待运输', 'transported': '已运输'};
+                        var colorMap = {'available': 'layui-bg-blue', 'transported': 'layui-bg-green'};
+                        var status = d.status || 'available';
+                        return '<span class="layui-badge ' + (colorMap[status] || 'layui-bg-gray') + '">' +
+                            (statusMap[status] || '未知') + '</span>';
+                    }},
+                {field: 'createTime', title: '创建时间', width: 160, align: 'center'},
+                {field: 'remark', title: '备注', width: 150},
+                {title: '操作', width: 140, align: 'center', fixed: 'right', templet: function(d) {
+                        return `
+                            <button class="layui-btn layui-btn-xs layui-btn-normal edit-btn" data-id="${d.id}">
+                                <i class="fas fa-edit"></i> 编辑
+                            </button>
+                            <button class="layui-btn layui-btn-xs layui-btn-danger delete-btn" data-id="${d.id}">
+                                <i class="fas fa-trash"></i> 删除
+                            </button>
+                        `;
+                    }}
+            ]],
+            done: function(res) {
+                if (res.code === 401) {
+                    layer.msg('登录已过期，请重新登录', {icon: 2});
+                    setTimeout(() => window.location.href = '/login.html', 1500);
+                }
+            }
+        });
+
+        // 初始化报表图表
+        initBatchReportChart();
+
+        // 搜索按钮
+        $('#searchBtn').click(function() {
+            batchTableInstance.reload({
+                where: {
+                    batchCode: $('#batchCode').val(),
+                    breed: $('#breed').val(),
+                    status: $('#batchStatus').val()
+                },
+                page: {curr: 1}
+            });
+        });
+
+        // 重置按钮
+        $('#resetBtn').click(function() {
+            $('#batchCode').val('');
+            $('#breed').val('');
+            $('#batchStatus').val('');
+            batchTableInstance.reload({
+                where: {},
+                page: {curr: 1}
+            });
+        });
+
+        // 新增批次
+        $('#addBatchBtn').click(function() {
+            resetForm();
+
+            layer.open({
+                type: 1,
+                title: '新增生猪批次',
+                area: ['550px', '500px'],
+                content: $('#batchForm'),
+                btn: ['确认提交', '取消'],
+                btn1: function(index) {
+                    var formData = {
+                        batchCode: $('#formBatchCode').val(),
+                        breed: $('#formBreed').val(),
+                        count: $('#formCount').val(),
+                        source: $('#formSource').val() || '未指定来源',
+                        status: $('#formStatus').val(),
+                        remark: $('#formRemark').val()
+                    };
+
+                    // 验证必填项
+                    if (!formData.batchCode) {
+                        layer.msg('批次编号不能为空', {icon: 2});
+                        return;
+                    }
+                    if (!formData.breed) {
+                        layer.msg('请选择生猪品种', {icon: 2});
+                        return;
+                    }
+                    if (!formData.count || formData.count <= 0) {
+                        layer.msg('生猪数量必须大于0', {icon: 2});
+                        return;
+                    }
+
+                    $.ajax({
+                        url: '/api/batch/add',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(formData),
+                        success: function(res) {
+                            if (res.code === 200) {
+                                layer.msg('新增成功', {icon: 1});
+                                batchTableInstance.reload();
+                                // 新增成功后刷新报表
+                                initBatchReportChart();
+                                layer.close(index);
+                            } else {
+                                layer.msg(res.msg || '新增失败', {icon: 2});
+                            }
+                        },
+                        error: function(xhr) {
+                            layer.msg('请求失败: ' + xhr.status, {icon: 2});
+                        }
+                    });
+                },
+                btn2: function(index) {
+                    layer.close(index);
+                }
+            });
+        });
+
+        // 编辑批次
+        $(document).on('click', '.edit-btn', function() {
+            var id = $(this).data('id');
+            $.ajax({
+                url: '/api/batch/detail?id=' + id,
+                type: 'GET',
+                success: function(res) {
+                    if (res.code === 200) {
+                        var data = res.data;
+                        $('#batchId').val(data.id);
+                        $('#formBatchCode').val(data.batchNo); // 注意字段名
+                        $('#formBreed').val(data.variety);    // 注意字段名
+                        $('#formCount').val(data.quantity);   // 注意字段名
+                        $('#formSource').val(data.source);
+                        $('#formStatus').val(data.status || 'available');
+                        $('#formRemark').val(data.remark);
+
+                        layer.open({
+                            type: 1,
+                            title: '编辑生猪批次',
+                            area: ['550px', '500px'],
+                            content: $('#batchForm'),
+                            btn: ['确认修改', '取消'],
+                            btn1: function(index) {
+                                var formData = {
+                                    id: $('#batchId').val(),
+                                    batchCode: $('#formBatchCode').val(),
+                                    breed: $('#formBreed').val(),
+                                    count: $('#formCount').val(),
+                                    source: $('#formSource').val() || '未指定来源',
+                                    status: $('#formStatus').val(),
+                                    remark: $('#formRemark').val()
+                                };
+
+                                // 验证必填项
+                                if (!formData.batchCode) {
+                                    layer.msg('批次编号不能为空', {icon: 2});
+                                    return;
+                                }
+                                if (!formData.breed) {
+                                    layer.msg('请选择生猪品种', {icon: 2});
+                                    return;
+                                }
+                                if (!formData.count || formData.count <= 0) {
+                                    layer.msg('生猪数量必须大于0', {icon: 2});
+                                    return;
+                                }
+
+                                $.ajax({
+                                    url: '/api/batch/update',
+                                    type: 'POST',
+                                    contentType: 'application/json',
+                                    data: JSON.stringify(formData),
+                                    success: function(res) {
+                                        if (res.code === 200) {
+                                            layer.msg('修改成功', {icon: 1});
+                                            batchTableInstance.reload();
+                                            // 修改成功后刷新报表
+                                            initBatchReportChart();
+                                            layer.close(index);
+                                        } else {
+                                            layer.msg(res.msg || '修改失败', {icon: 2});
+                                        }
+                                    },
+                                    error: function(xhr) {
+                                        layer.msg('请求失败: ' + xhr.status, {icon: 2});
+                                    }
+                                });
+                            },
+                            btn2: function(index) {
+                                layer.close(index);
+                            }
+                        });
+                    } else {
+                        layer.msg(res.msg || '获取详情失败', {icon: 2});
+                    }
+                },
+                error: function(xhr) {
+                    layer.msg('请求失败: ' + xhr.status, {icon: 2});
+                }
+            });
+        });
+
+        // 删除批次 - 修复刷新问题
+        $(document).on('click', '.delete-btn', function() {
+            var id = $(this).data('id');
+            layer.confirm('确定要删除该批次吗？', {icon: 3, title: '删除确认'}, function(index) {
+                $.ajax({
+                    url: '/api/batch/delete/' + id,
+                    type: 'DELETE',
+                    success: function(res) {
+                        if (res.code === 200) {
+                            layer.msg('删除成功', {icon: 1});
+                            // 使用正确的表格实例重新加载
+                            batchTableInstance.reload();
+                            // 删除成功后刷新报表
+                            initBatchReportChart();
+                        } else {
+                            layer.msg(res.msg || '删除失败', {icon: 2});
+                        }
+                    },
+                    error: function(xhr) {
+                        layer.msg('请求失败: ' + xhr.status, {icon: 2});
+                    }
+                });
+                layer.close(index);
+            });
+        });
+
+        // 导出数据
+        $('#exportBatchBtn').click(function() {
+            window.location.href = '/api/batch/export?batchCode=' + $('#batchCode').val() +
+                '&breed=' + $('#breed').val() +
+                '&status=' + $('#batchStatus').val();
+        });
+    });
+
+    // 重置表单函数
+    function resetForm() {
+        $('#batchId').val('');
+        $('#formBatchCode').val('');
+        $('#formBreed').val('');
+        $('#formCount').val('');
+        $('#formSource').val('');
+        $('#formStatus').val('available');
+        $('#formRemark').val('');
+    }
+
+    // 初始化批次报表图表
+    function initBatchReportChart() {
+        // 初始化ECharts实例
+        var chart = echarts.init(document.getElementById('batchReportChart'));
+
+        // 先显示加载提示
+        chart.showLoading({
+            text: '正在加载报表数据...',
+            color: '#5FB878',
+            textColor: '#666'
+        });
+
+        // 调用后端接口获取报表数据
+        $.ajax({
+            url: "/batch/report/breederCount",
+            type: "GET",
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+            },
+            success: function(res) {
+                // 隐藏加载提示
+                chart.hideLoading();
+
+                if (res.code === 0) {
+                    // 提取数据：适配两种场景（有养殖户ID/按品种统计）
+                    var xData = []; // X轴数据
+                    var yData = []; // Y轴数据
+
+                    if (res.data && res.data.length > 0) {
+                        // 如果有养殖户统计数据
+                        res.data.forEach(item => {
+                            xData.push("养殖户" + item.breeder_id);
+                            yData.push(item.batch_count);
+                        });
+                    } else {
+                        // 备用方案：按生猪品种统计批次数量（兼容无养殖户数据的情况）
+                        $.ajax({
+                            url: "/api/batch/list",
+                            type: "GET",
+                            success: function(batchRes) {
+                                if (batchRes.code === 200 && batchRes.data && batchRes.data.length > 0) {
+                                    // 统计各品种批次数量
+                                    var breedCount = {};
+                                    batchRes.data.forEach(batch => {
+                                        var breed = batch.variety || '未知品种';
+                                        breedCount[breed] = (breedCount[breed] || 0) + 1;
+                                    });
+
+                                    // 转换为图表数据
+                                    for (var breed in breedCount) {
+                                        xData.push(breed);
+                                        yData.push(breedCount[breed]);
+                                    }
+
+                                    // 更新图表
+                                    renderChart(chart, xData, yData);
+                                } else {
+                                    // 无数据时显示提示
+                                    renderEmptyChart(chart);
+                                }
+                            },
+                            error: function() {
+                                renderEmptyChart(chart);
+                            }
+                        });
+                        return;
+                    }
+
+                    // 渲染图表
+                    renderChart(chart, xData, yData);
+                } else {
+                    // 接口返回错误，尝试按品种统计
+                    $.ajax({
+                        url: "/api/batch/list",
+                        type: "GET",
+                        success: function(batchRes) {
+                            if (batchRes.code === 200 && batchRes.data && batchRes.data.length > 0) {
+                                var breedCount = {};
+                                batchRes.data.forEach(batch => {
+                                    var breed = batch.variety || '未知品种';
+                                    breedCount[breed] = (breedCount[breed] || 0) + 1;
+                                });
+
+                                for (var breed in breedCount) {
+                                    xData.push(breed);
+                                    yData.push(breedCount[breed]);
+                                }
+                                renderChart(chart, xData, yData);
+                            } else {
+                                renderEmptyChart(chart);
+                            }
+                        },
+                        error: function() {
+                            renderEmptyChart(chart);
+                        }
+                    });
+                }
+            },
+            error: function() {
+                // 接口请求失败，尝试备用方案
+                chart.hideLoading();
+                $.ajax({
+                    url: "/api/batch/list",
+                    type: "GET",
+                    success: function(batchRes) {
+                        if (batchRes.code === 200 && batchRes.data && batchRes.data.length > 0) {
+                            var xData = [];
+                            var yData = [];
+                            var breedCount = {};
+
+                            batchRes.data.forEach(batch => {
+                                var breed = batch.variety || '未知品种';
+                                breedCount[breed] = (breedCount[breed] || 0) + 1;
+                            });
+
+                            for (var breed in breedCount) {
+                                xData.push(breed);
+                                yData.push(breedCount[breed]);
+                            }
+                            renderChart(chart, xData, yData);
+                        } else {
+                            renderEmptyChart(chart);
+                        }
+                    },
+                    error: function() {
+                        renderEmptyChart(chart);
+                    }
+                });
+            }
+        });
+
+        // 自适应窗口大小
+        window.addEventListener('resize', function() {
+            chart.resize();
+        });
+    }
+
+    // 渲染图表
+    function renderChart(chart, xData, yData) {
+        var option = {
+            title: {
+                text: '生猪批次数据统计',
+                left: 'center',
+                textStyle: { fontSize: 16, fontWeight: 500 }
+            },
+            tooltip: {
+                trigger: 'axis',
+                textStyle: { fontSize: 12 }
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'category',
+                data: xData,
+                axisLabel: {
+                    interval: 0,
+                    rotate: 15 // 标签旋转，防止重叠
+                }
+            },
+            yAxis: {
+                type: 'value',
+                name: '批次数量',
+                min: 0
+            },
+            series: [{
+                name: '批次数量',
+                type: 'bar',
+                data: yData,
+                itemStyle: {
+                    color: '#5FB878',
+                    borderRadius: [4, 4, 0, 0]
+                },
+                emphasis: {
+                    itemStyle: { color: '#3aa05f' }
+                }
+            }]
+        };
+        chart.setOption(option);
+    }
+
+    // 渲染无数据的图表
+    function renderEmptyChart(chart) {
+        var option = {
+            title: {
+                text: '生猪批次数据统计',
+                left: 'center',
+                textStyle: { fontSize: 16, fontWeight: 500 }
+            },
+            tooltip: { trigger: 'axis' },
+            xAxis: { type: 'category', data: [] },
+            yAxis: { type: 'value', name: '批次数量' },
+            series: [{ name: '批次数量', type: 'bar', data: [] }],
+            graphic: {
+                type: 'text',
+                left: 'center',
+                top: '50%',
+                style: {
+                    text: '暂无批次数据，请先添加数据',
+                    fontSize: 14,
+                    fill: '#999'
+                }
+            }
+        };
+        chart.setOption(option);
+    }
+</script>
+</body>
+</html>

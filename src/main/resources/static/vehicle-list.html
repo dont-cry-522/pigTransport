@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>车辆管理 - 生猪运输管理系统</title>
+    <link rel="stylesheet" href="/layui/css/layui.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .vehicle-container {
+            padding: 20px;
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+
+        .toolbar {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-free { background: #e8f5e9; color: #2e7d32; }
+        .status-transporting { background: #fff3e0; color: #ef6c00; }
+        .status-maintenance { background: #ffebee; color: #d32f2f; }
+        .status-resting { background: #e0f7fa; color: #00695c; }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .quick-actions {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        .quick-btn {
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        /* 优化标题样式 */
+        .toolbar-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        .toolbar-title i {
+            color: #FF9800;
+        }
+    </style>
+</head>
+<body>
+
+<div class="vehicle-container">
+    <!-- 工具栏 -->
+    <div class="toolbar">
+        <div class="toolbar-title">
+            <i class="fas fa-truck"></i>
+            <span>车辆管理</span>
+        </div>
+
+        <div class="layui-row">
+            <div class="layui-col-md8">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="搜索车牌号、车型"
+                           class="layui-input" style="width: 300px; display: inline-block;">
+                    <select id="statusFilter" class="layui-select" style="width: 120px; display: inline-block; margin-left: 10px;">
+                        <option value="">全部状态</option>
+                        <option value="free">空闲</option>
+                        <option value="transporting">运输中</option>
+                        <option value="maintenance">维修中</option>
+                        <option value="resting">休息中</option>
+                    </select>
+                    <button class="layui-btn layui-btn-primary" onclick="searchVehicles()" style="margin-left: 10px;">
+                        <i class="layui-icon">&#xe615;</i> 搜索
+                    </button>
+                </div>
+            </div>
+            <div class="layui-col-md4" style="text-align: right;">
+                <button class="layui-btn layui-btn-normal" onclick="openAddVehicle()">
+                    <i class="fas fa-plus"></i> 添加车辆
+                </button>
+                <button class="layui-btn layui-btn-warm" onclick="refreshTable()">
+                    <i class="fas fa-sync-alt"></i> 刷新
+                </button>
+            </div>
+        </div>
+
+        <div class="quick-actions">
+            <strong>快速筛选：</strong>
+            <button class="layui-btn layui-btn-xs quick-btn" onclick="filterByStatus('free')">
+                空闲车辆 (<span id="freeCount">0</span>)
+            </button>
+            <button class="layui-btn layui-btn-xs layui-btn-warm quick-btn" onclick="filterByStatus('transporting')">
+                运输中 (<span id="transportingCount">0</span>)
+            </button>
+            <button class="layui-btn layui-btn-xs layui-btn-danger quick-btn" onclick="filterByStatus('maintenance')">
+                维修中 (<span id="maintenanceCount">0</span>)
+            </button>
+            <button class="layui-btn layui-btn-xs layui-btn-info quick-btn" onclick="filterByStatus('resting')">
+                休息中 (<span id="restingCount">0</span>)
+            </button>
+        </div>
+    </div>
+
+    <!-- 数据表格 -->
+    <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.05);">
+        <table id="vehicleTable" lay-filter="vehicleTable"></table>
+    </div>
+</div>
+
+<!-- 表格工具栏模板 - 移到body内，避免document.write的兼容性问题 -->
+<script type="text/html" id="vehicleToolbar">
+    <div class="action-buttons">
+        <a class="layui-btn layui-btn-xs layui-btn-normal" lay-event="edit">
+            <i class="fas fa-edit"></i> 编辑
+        </a>
+
+        <a class="layui-btn layui-btn-xs layui-btn-warm" lay-event="status">
+            <i class="fas fa-cog"></i> 状态
+        </a>
+        <a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="delete">
+            <i class="fas fa-trash"></i> 删除
+        </a>
+    </div>
+</script>
+
+<script src="/layui/layui.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script>
+    // 全局变量存储表格实例
+    var tableIns;
+
+    layui.use(['table', 'form', 'layer'], function(){
+        var table = layui.table;
+        var form = layui.form;
+        var layer = layui.layer;
+
+        // 初始化表格
+        tableIns = table.render({
+            elem: '#vehicleTable',
+            url: '/api/vehicle/list',
+            page: true,
+            limit: 10,
+            limits: [10, 20, 50],
+            cols: [[
+                {field: 'vehicleId', title: 'ID', width: 80, sort: true},
+                {field: 'licensePlate', title: '车牌号', width: 150},
+                {field: 'model', title: '车型', width: 150},
+                {field: 'vehicleType', title: '车辆类型', width: 120,
+                    templet: function(d){
+                        var typeMap = {
+                            'truck': '厢式货车',
+                            'van': '面包车',
+                            'refrigerated': '冷藏车',
+                            'other': '其他'
+                        };
+                        return typeMap[d.vehicleType] || d.vehicleType || '未知';
+                    }},
+                {field: 'driverName', title: '当前司机', width: 120,
+                    templet: function(d){
+                        return d.driverName || '未分配';
+                    }},
+                {field: 'status', title: '状态', width: 120,
+                    templet: function(d){
+                        var text = '', cls = '';
+                        switch(d.status) {
+                            case 'free': text = '空闲'; cls = 'status-free'; break;
+                            case 'transporting': text = '运输中'; cls = 'status-transporting'; break;
+                            case 'maintenance': text = '维修中'; cls = 'status-maintenance'; break;
+                            case 'resting': text = '休息中'; cls = 'status-resting'; break;
+                            default: text = d.status;
+                        }
+                        return '<span class="status-badge ' + cls + '">' + text + '</span>';
+                    }},
+                {field: 'createTime', title: '注册时间', width: 180, sort: true},
+                {fixed: 'right', title: '操作', width: 220, align: 'center',
+                    toolbar: '#vehicleToolbar'}
+            ]],
+            parseData: function(res){
+                return {
+                    "code": res.code === 200 ? 0 : res.code,
+                    "msg": res.message || res.msg || '',
+                    "count": res.data ? res.data.length : 0,
+                    "data": res.data || []
+                };
+            },
+            done: function(res, curr, count){
+                // 统计各状态数量
+                var stats = {free: 0, transporting: 0, maintenance: 0, resting: 0};
+                if(res.data && res.data.length > 0) {
+                    res.data.forEach(function(item){
+                        if(stats[item.status] !== undefined) {
+                            stats[item.status]++;
+                        }
+                    });
+                }
+                $('#freeCount').text(stats.free);
+                $('#transportingCount').text(stats.transporting);
+                $('#maintenanceCount').text(stats.maintenance);
+                $('#restingCount').text(stats.resting);
+            }
+        });
+
+        // 监听工具条
+        table.on('tool(vehicleTable)', function(obj){
+            var data = obj.data;
+            var event = obj.event;
+
+            if(event === 'edit'){
+                editVehicle(data.vehicleId);
+            } else if(event === 'assign'){
+                assignDriver(data.vehicleId);
+            } else if(event === 'status'){
+                changeStatus(data.vehicleId, data.status);
+            } else if(event === 'delete'){
+                deleteVehicle(data.vehicleId);
+            }
+        });
+
+        // ========== 核心修改：所有函数挂载到window全局作用域 ==========
+        // 表格重载
+        window.refreshTable = function() {
+            if(tableIns) {
+                tableIns.reload({
+                    page: {curr: 1}
+                });
+            } else {
+                layer.msg('表格未初始化', {icon: 2});
+            }
+        };
+
+        // 搜索车辆
+        window.searchVehicles = function() {
+            var keyword = $('#searchInput').val() || '';
+            var status = $('#statusFilter').val() || '';
+
+            if(tableIns) {
+                tableIns.reload({
+                    where: {
+                        keyword: keyword,
+                        status: status
+                    },
+                    page: {curr: 1}
+                });
+            }
+        };
+
+        // 快速筛选
+        window.filterByStatus = function(status) {
+            $('#statusFilter').val(status);
+            form.render('select'); // 刷新layui选择框渲染
+            searchVehicles();
+        };
+
+        // 添加车辆 - 【修改1：缩小弹窗尺寸+支持关闭】
+        window.openAddVehicle = function() {
+            layer.open({
+                type: 2,
+                title: '添加车辆 - 生猪运输管理系统',
+                area: ['700px', '600px'], // 缩小弹窗尺寸（原850*700）
+                content: '/vehicle/form.html',
+                shade: 0.3,
+                btn: false,
+                shadeClose: true, // 点击遮罩可关闭
+                closeBtn: 1, // 显示自带关闭按钮
+                maxmin: false,
+                // 增加错误处理
+                success: function(layero, index) {
+                    var body = layer.getChildFrame('body', index);
+                    if(!body) {
+                        layer.msg('页面加载失败，请检查路径', {icon: 2});
+                        layer.close(index);
+                    }
+                },
+                error: function() {
+                    layer.msg('页面打开失败', {icon: 2});
+                }
+            });
+        };
+
+        // 编辑车辆 - 【修改2：缩小弹窗尺寸+支持关闭】
+        window.editVehicle = function(vehicleId) {
+            if(!vehicleId) {
+                layer.msg('车辆ID不能为空', {icon: 2});
+                return;
+            }
+            layer.open({
+                type: 2,
+                title: '编辑车辆信息 - 生猪运输管理系统',
+                area: ['700px', '600px'], // 缩小弹窗尺寸（原850*700）
+                content: '/vehicle/form.html?id=' + vehicleId,
+                shade: 0.3,
+                btn: false,
+                shadeClose: true, // 点击遮罩可关闭
+                closeBtn: 1, // 显示自带关闭按钮
+                maxmin: false,
+                success: function(layero, index) {
+                    var body = layer.getChildFrame('body', index);
+                    if(!body) {
+                        layer.msg('页面加载失败，请检查路径', {icon: 2});
+                        layer.close(index);
+                    }
+                }
+            });
+        };
+
+        // 分配司机
+        window.assignDriver = function(vehicleId) {
+            if(!vehicleId) {
+                layer.msg('车辆ID不能为空', {icon: 2});
+                return;
+            }
+            layer.open({
+                type: 2,
+                title: '分配司机 - 生猪运输管理系统',
+                area: ['550px', '600px'],
+                content: '/vehicle/vehicle-assign.html?vehicleId=' + vehicleId,
+                shade: 0.3,
+                btn: false,
+                shadeClose: true, // 新增：点击遮罩可关闭
+                closeBtn: 1, // 新增：显示自带关闭按钮
+                maxmin: false,
+                success: function(layero, index) {
+                    var body = layer.getChildFrame('body', index);
+                    if(!body) {
+                        layer.msg('页面加载失败，请检查路径', {icon: 2});
+                        layer.close(index);
+                    }
+                }
+            });
+        };
+
+        // 修改状态
+        window.changeStatus = function(vehicleId, currentStatus) {
+            if(!vehicleId) {
+                layer.msg('车辆ID不能为空', {icon: 2});
+                return;
+            }
+            layer.prompt({
+                title: '修改车辆状态',
+                formType: 'select',
+                value: currentStatus || 'free',
+                data: [
+                    {value: 'free', name: '空闲'},
+                    {value: 'transporting', name: '运输中'},
+                    {value: 'maintenance', name: '维修中'},
+                    {value: 'resting', name: '休息中'}
+                ]
+            }, function(value, index){
+                $.ajax({
+                    url: '/api/vehicle/updateStatus',
+                    type: 'PUT', // 匹配后端PUT方法
+                    data: {
+                        vehicleId: vehicleId,
+                        status: value
+                    },
+                    dataType: 'json',
+                    success: function(res) {
+                        if(res && res.code === 200) {
+                            layer.msg('状态更新成功', {icon: 1});
+                            refreshTable();
+                        } else {
+                            layer.msg(res?.msg || res?.message || '更新失败', {icon: 2});
+                        }
+                        layer.close(index);
+                    },
+                    error: function(xhr, status, error) {
+                        layer.msg('请求失败: ' + xhr.status + ' - ' + error, {icon: 2});
+                        layer.close(index);
+                    }
+                });
+            });
+        };
+
+        // 删除车辆 - 【修改3：完善删除逻辑，增强提示+确保生效】
+        window.deleteVehicle = function(vehicleId) {
+            if(!vehicleId) {
+                layer.msg('车辆ID不能为空', {icon: 2});
+                return;
+            }
+            // 强化删除确认提示
+            layer.confirm('⚠️ 确定要删除这辆车的信息吗？删除后数据将无法恢复！', {
+                title: '删除确认',
+                icon: 3,
+                btn: ['确定删除', '取消'],
+                btnAlign: 'c',
+                shade: 0.5
+            }, function(index){
+                $.ajax({
+                    url: '/api/vehicle/delete/' + vehicleId,
+                    type: 'DELETE',
+                    dataType: 'json',
+                    // 新增：超时处理
+                    timeout: 5000,
+                    success: function(res) {
+                        if(res && res.code === 200) {
+                            layer.msg('删除成功！', {icon: 1, time: 1500});
+                            refreshTable(); // 删除后强制刷新表格
+                        } else {
+                            layer.msg(res?.msg || res?.message || '删除失败', {icon: 2});
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        // 更详细的错误提示
+                        var errMsg = '';
+                        if(status === 'timeout') errMsg = '请求超时，请稍后重试';
+                        else errMsg = '请求失败: ' + xhr.status + ' - ' + (error || xhr.statusText);
+                        layer.msg(errMsg, {icon: 2});
+                    },
+                    complete: function() {
+                        layer.close(index); // 无论成功失败都关闭确认框
+                    }
+                });
+            });
+        };
+    });
+
+    // 防止layui未加载完成时调用函数的兜底处理
+    window.refreshTable = window.refreshTable || function() {
+        layer.msg('系统初始化中，请稍后重试', {icon: 2});
+    };
+    window.searchVehicles = window.searchVehicles || function() {
+        layer.msg('系统初始化中，请稍后重试', {icon: 2});
+    };
+    window.filterByStatus = window.filterByStatus || function() {
+        layer.msg('系统初始化中，请稍后重试', {icon: 2});
+    };
+</script>
+</body>
+</html>

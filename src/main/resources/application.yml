@@ -1,0 +1,113 @@
+# ===================== 服务器配置 =====================
+server:
+  port: 8080
+  servlet:
+    context-path: /
+    session:
+      timeout: 1800
+  tomcat:
+    uri-encoding: UTF-8
+    max-swallow-size: -1
+
+# ===================== Spring 核心配置 =====================
+spring:
+  application:
+    name: pig-transport-system
+
+  # ========== 静态资源配置 ==========
+  web:
+    resources:
+      static-locations: classpath:/static/,classpath:/public/,classpath:/resources/,classpath:/META-INF/resources/
+      cache:
+        period: 0
+
+  # ========== 数据源配置 ==========
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/pig_transport?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+    username: root
+    password: 123456
+    hikari:
+      connection-timeout: 30000
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      connection-test-query: SELECT 1
+
+  # ========== 文件上传配置 ==========
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+  # ========== 模板引擎配置（禁用）==========
+  thymeleaf:
+    enabled: false
+    cache: false
+
+# ===================== MyBatis Plus 配置 =====================
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.pigtransport.entity
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+      table-underline: true
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+    use-generated-keys: true
+    default-executor-type: simple
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    auto-mapping-behavior: full
+
+# ===================== 日志配置 =====================
+logging:
+  level:
+    root: INFO
+    com.pigtransport: DEBUG
+    com.baomidou.mybatisplus: DEBUG
+  file:
+    name: logs/pig-transport.log
+  pattern:
+    console: '%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n'
+    file: '%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n'
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 30
+
+# ===================== 自定义应用配置 =====================
+app:
+  upload:
+    base-path: ./upload/images/
+    img-prefix: /images/
+  page:
+    size: 10
+    max-size: 100
+  system:
+    name: 生猪运输协同管理系统
+    version: 1.0.0
+    copyright: © 2026 毕业设计
+
+# ===================== 开发环境特定配置 =====================
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: jdbc:mysql://localhost:3306/pig_transport_dev?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+
+# ===================== 生产环境配置 =====================
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: jdbc:mysql://prod-server:3306/pig_transport?useSSL=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true

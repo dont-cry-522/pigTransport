@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>运输任务管理 - 生猪运输管理系统</title>
+    <link rel="stylesheet" href="/layui/css/layui.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+        }
+        .page-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+            padding: 25px;
+        }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .page-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .page-title i {
+            color: #FF5722;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+        .search-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .search-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .search-item label {
+            color: #666;
+            font-size: 14px;
+        }
+        .layui-table {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .layui-table th {
+            background: #f8f9fa;
+            font-weight: 500;
+        }
+        .layui-btn-sm {
+            border-radius: 6px;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+        }
+        /* 状态标签样式 */
+        .status-badge {
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status-pending { background: #1890ff; color: white; }
+        .status-transporting { background: #faad14; color: white; }
+        .status-completed { background: #52c41a; color: white; }
+        .status-canceled { background: #d9d9d9; color: #666; }
+        /* 报表容器样式 */
+        .report-container {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .report-card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.08);
+            padding: 15px;
+        }
+        #taskReportChart {
+            width: 100%;
+            height: 400px;
+        }
+    </style>
+</head>
+<body>
+<div class="page-container">
+    <!-- 页面头部 -->
+    <div class="page-header">
+        <div class="page-title">
+            <i class="fas fa-truck-loading"></i>
+            运输任务管理
+        </div>
+        <div class="btn-group">
+            <button class="layui-btn layui-btn-sm layui-btn-normal" id="addTaskBtn">
+                <i class="fas fa-plus"></i> 新增任务
+            </button>
+            <button class="layui-btn layui-btn-sm layui-btn-warm" id="refreshBtn">
+                <i class="fas fa-sync-alt"></i> 刷新
+            </button>
+        </div>
+    </div>
+
+    <!-- 搜索栏 -->
+    <div class="search-bar">
+        <div class="search-item">
+            <label for="taskCode">任务编号：</label>
+            <input type="text" id="taskCode" class="layui-input" placeholder="请输入任务编号" style="width: 180px;">
+        </div>
+        <div class="search-item">
+            <label for="batchId">批次ID：</label>
+            <input type="text" id="batchId" class="layui-input" placeholder="请输入批次ID" style="width: 150px;">
+        </div>
+        <div class="search-item">
+            <label for="taskStatus">任务状态：</label>
+            <select id="taskStatus" class="layui-select" style="width: 120px;">
+                <option value="">全部状态</option>
+                <option value="pending">待分配</option>
+                <option value="transporting">运输中</option>
+                <option value="completed">已完成</option>
+                <option value="canceled">已取消</option>
+            </select>
+        </div>
+        <div class="search-item">
+            <label for="vehicleId">车辆ID：</label>
+            <input type="text" id="vehicleId" class="layui-input" placeholder="请输入车辆ID" style="width: 120px;">
+        </div>
+        <div class="search-item">
+            <button class="layui-btn layui-btn-sm" id="searchBtn">
+                <i class="fas fa-search"></i> 搜索
+            </button>
+            <button class="layui-btn layui-btn-sm layui-btn-primary" id="resetBtn">
+                <i class="fas fa-redo"></i> 重置
+            </button>
+        </div>
+    </div>
+
+    <!-- 表格区域 -->
+    <table class="layui-table" id="taskTable" lay-filter="taskTable"></table>
+
+    <!-- 新增报表区域 -->
+    <div class="report-container">
+        <div class="page-title" style="font-size: 16px; margin-bottom: 15px;">
+            <i class="fas fa-chart-pie"></i>
+            运输任务数据报表
+        </div>
+        <div class="report-card">
+            <div id="taskReportChart"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 新增/编辑弹窗 -->
+<div id="taskForm" style="display: none; padding: 20px;">
+    <input type="hidden" id="taskId">
+    <div class="layui-form-item">
+        <label class="layui-form-label">任务编号<span style="color: red;">*</span></label>
+        <div class="layui-input-block">
+            <input type="text" id="formTaskCode" lay-verify="required" placeholder="请输入任务编号" class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">批次ID<span style="color: red;">*</span></label>
+        <div class="layui-input-block">
+            <input type="number" id="formBatchId" lay-verify="required|number" placeholder="请输入批次ID" class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">车辆ID</label>
+        <div class="layui-input-block">
+            <input type="number" id="formVehicleId" placeholder="请输入车辆ID" class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">司机ID</label>
+        <div class="layui-input-block">
+            <input type="number" id="formDriverId" placeholder="请输入司机ID" class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">出发地<span style="color: red;">*</span></label>
+        <div class="layui-input-block">
+            <input type="text" id="formStartPlace" lay-verify="required" placeholder="请输入出发地" class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">目的地<span style="color: red;">*</span></label>
+        <div class="layui-input-block">
+            <input type="text" id="formEndPlace" lay-verify="required" placeholder="请输入目的地" class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">任务状态<span style="color: red;">*</span></label>
+        <div class="layui-input-block">
+            <select id="formStatus" lay-verify="required" class="layui-select">
+                <option value="pending">待分配</option>
+                <option value="transporting">运输中</option>
+                <option value="completed">已完成</option>
+                <option value="canceled">已取消</option>
+            </select>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">备注信息</label>
+        <div class="layui-input-block">
+            <textarea id="formRemark" placeholder="请输入备注" class="layui-textarea" rows="3"></textarea>
+        </div>
+    </div>
+</div>
+
+<script src="/layui/layui.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<!-- 引入ECharts -->
+<script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+<script>
+    layui.use(['table', 'form', 'layer'], function() {
+        var table = layui.table;
+        var form = layui.form;
+        var layer = layui.layer;
+
+        // 表格渲染
+        var taskTable = table.render({
+            elem: '#taskTable',
+            url: '/api/task/list',
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+            },
+            page: true,
+            limit: 10,
+            limits: [10, 20, 30],
+            cols: [[
+                {field: 'taskId', title: 'ID', width: 80, align: 'center', sort: true},
+                {field: 'taskCode', title: '任务编号', minWidth: 120},
+                {field: 'batchId', title: '批次ID', width: 100, align: 'center'},
+                {field: 'vehicleId', title: '车辆ID', width: 100, align: 'center'},
+                {field: 'driverId', title: '司机ID', width: 100, align: 'center'},
+                {field: 'startPlace', title: '出发地', width: 120},
+                {field: 'endPlace', title: '目的地', width: 120},
+                {field: 'status', title: '任务状态', width: 120, align: 'center', templet: function(d) {
+                        var statusMap = {
+                            'pending': '待分配',
+                            'transporting': '运输中',
+                            'completed': '已完成',
+                            'canceled': '已取消'
+                        };
+                        var colorMap = {
+                            'pending': 'status-pending',
+                            'transporting': 'status-transporting',
+                            'completed': 'status-completed',
+                            'canceled': 'status-canceled'
+                        };
+                        return '<span class="status-badge ' + colorMap[d.status] + '">' + statusMap[d.status] + '</span>';
+                    }},
+                {field: 'assignTime', title: '分配时间', width: 160, align: 'center'},
+                {field: 'createTime', title: '创建时间', width: 160, align: 'center'},
+                {field: 'remark', title: '备注', minWidth: 150},
+                {title: '操作', width: 160, align: 'center', fixed: 'right', templet: function(d) {
+                        return `
+                            <div class="action-buttons">
+                                <button class="layui-btn layui-btn-xs layui-btn-normal edit-btn" data-id="${d.taskId}">
+                                    <i class="fas fa-edit"></i> 编辑
+                                </button>
+                                <button class="layui-btn layui-btn-xs layui-btn-warm" onclick="startTransport(${d.taskId})">
+                                    <i class="fas fa-play"></i> 开始
+                                </button>
+                                <button class="layui-btn layui-btn-xs layui-btn-danger delete-btn" data-id="${d.taskId}">
+                                    <i class="fas fa-trash"></i> 删除
+                                </button>
+                            </div>
+                        `;
+                    }}
+            ]],
+            parseData: function(res) {
+                // 适配Layui表格数据格式
+                if (res.code === 0) {
+                    return {
+                        "code": 0,
+                        "msg": res.msg || "success",
+                        "count": res.count || res.data.length,
+                        "data": res.data
+                    };
+                } else if (res.code === 200) {
+                    return {
+                        "code": 0,
+                        "msg": "success",
+                        "count": res.data ? res.data.length : 0,
+                        "data": res.data
+                    };
+                } else {
+                    return {
+                        "code": res.code || 1,
+                        "msg": res.msg || "请求失败",
+                        "count": 0,
+                        "data": []
+                    };
+                }
+            },
+            done: function(res) {
+                if (res.code === 401) {
+                    layer.msg('登录已过期，请重新登录', {icon: 2});
+                    setTimeout(() => window.location.href = '/login.html', 1500);
+                }
+            }
+        });
+
+        // 初始化任务报表图表
+        initTaskReportChart();
+
+        // 搜索按钮
+        $('#searchBtn').click(function() {
+            taskTable.reload({
+                where: {
+                    taskCode: $('#taskCode').val(),
+                    batchId: $('#batchId').val(),
+                    status: $('#taskStatus').val(),
+                    vehicleId: $('#vehicleId').val()
+                },
+                page: {curr: 1}
+            });
+        });
+
+        // 重置按钮
+        $('#resetBtn').click(function() {
+            $('#taskCode').val('');
+            $('#batchId').val('');
+            $('#vehicleId').val('');
+            $('#taskStatus').val('');
+            taskTable.reload({
+                where: {},
+                page: {curr: 1}
+            });
+        });
+
+        // 刷新按钮
+        $('#refreshBtn').click(function() {
+            taskTable.reload();
+            // 刷新报表
+            initTaskReportChart();
+            layer.msg('数据已刷新', {icon: 1});
+        });
+
+        // 重置表单
+        function resetForm() {
+            $('#taskId').val('');
+            $('#formTaskCode').val('');
+            $('#formBatchId').val('');
+            $('#formVehicleId').val('');
+            $('#formDriverId').val('');
+            $('#formStartPlace').val('');
+            $('#formEndPlace').val('');
+            $('#formStatus').val('pending');
+            $('#formRemark').val('');
+        }
+
+        // 新增运输任务
+        $('#addTaskBtn').click(function() {
+            resetForm();
+
+            layer.open({
+                type: 1,
+                title: '新增运输任务',
+                area: ['600px', '550px'],
+                content: $('#taskForm'),
+                btn: ['确认提交', '取消'],
+                btn1: function(index) {
+                    // 收集表单数据
+                    var data = {
+                        taskCode: $('#formTaskCode').val(),
+                        batchId: $('#formBatchId').val(),
+                        startPlace: $('#formStartPlace').val(),
+                        endPlace: $('#formEndPlace').val(),
+                        status: $('#formStatus').val(),
+                        remark: $('#formRemark').val()
+                    };
+
+                    // 添加可选字段
+                    var vehicleId = $('#formVehicleId').val();
+                    if (vehicleId && vehicleId.trim() !== '') {
+                        data.vehicleId = parseInt(vehicleId);
+                    }
+
+                    var driverId = $('#formDriverId').val();
+                    if (driverId && driverId.trim() !== '') {
+                        data.driverId = parseInt(driverId);
+                    }
+
+                    // 验证必填字段
+                    if (!data.taskCode || !data.taskCode.trim()) {
+                        layer.msg('任务编号不能为空', {icon: 2});
+                        return false;
+                    }
+                    if (!data.batchId) {
+                        layer.msg('批次ID不能为空', {icon: 2});
+                        return false;
+                    }
+                    if (!data.startPlace || !data.startPlace.trim()) {
+                        layer.msg('出发地不能为空', {icon: 2});
+                        return false;
+                    }
+                    if (!data.endPlace || !data.endPlace.trim()) {
+                        layer.msg('目的地不能为空', {icon: 2});
+                        return false;
+                    }
+
+                    // 发送请求
+                    $.ajax({
+                        url: '/api/task/add',
+                        type: 'POST',
+                        contentType: 'application/json;charset=UTF-8',
+                        data: JSON.stringify(data),
+                        dataType: 'json',
+                        success: function(res) {
+                            if (res.code === 200) {
+                                layer.msg(res.msg || '新增成功', {icon: 1});
+                                taskTable.reload();
+                                // 新增成功后刷新报表
+                                initTaskReportChart();
+                                layer.close(index);
+                            } else {
+                                layer.msg(res.msg || '新增失败', {icon: 2});
+                            }
+                        },
+                        error: function(xhr) {
+                            var errorMsg = '请求失败';
+                            if (xhr.responseJSON && xhr.responseJSON.msg) {
+                                errorMsg = xhr.responseJSON.msg;
+                            }
+                            layer.msg(errorMsg + ' (状态码: ' + xhr.status + ')', {icon: 2});
+                        }
+                    });
+                },
+                btn2: function(index) {
+                    layer.close(index);
+                }
+            });
+        });
+
+        // 编辑运输任务
+        $(document).on('click', '.edit-btn', function() {
+            var id = $(this).data('id');
+            $.ajax({
+                url: '/api/task/detail/' + id,
+                type: 'GET',
+                success: function(res) {
+                    if (res.code === 200) {
+                        var task = res.data.task || res.data;
+
+                        // 填充表单数据
+                        $('#taskId').val(task.taskId || task.id);
+                        $('#formTaskCode').val(task.taskCode);
+                        $('#formBatchId').val(task.batchId);
+                        $('#formVehicleId').val(task.vehicleId || '');
+                        $('#formDriverId').val(task.driverId || '');
+                        $('#formStartPlace').val(task.startPlace);
+                        $('#formEndPlace').val(task.endPlace);
+                        $('#formStatus').val(task.status || 'pending');
+                        $('#formRemark').val(task.remark || '');
+
+                        layer.open({
+                            type: 1,
+                            title: '编辑运输任务',
+                            area: ['600px', '550px'],
+                            content: $('#taskForm'),
+                            btn: ['确认修改', '取消'],
+                            btn1: function(index) {
+                                // 收集表单数据
+                                var data = {
+                                    taskId: $('#taskId').val(),
+                                    taskCode: $('#formTaskCode').val(),
+                                    batchId: $('#formBatchId').val(),
+                                    startPlace: $('#formStartPlace').val(),
+                                    endPlace: $('#formEndPlace').val(),
+                                    status: $('#formStatus').val(),
+                                    remark: $('#formRemark').val()
+                                };
+
+                                // 添加可选字段
+                                var vehicleId = $('#formVehicleId').val();
+                                if (vehicleId && vehicleId.trim() !== '') {
+                                    data.vehicleId = parseInt(vehicleId);
+                                }
+
+                                var driverId = $('#formDriverId').val();
+                                if (driverId && driverId.trim() !== '') {
+                                    data.driverId = parseInt(driverId);
+                                }
+
+                                // 验证必填字段
+                                if (!data.taskCode || !data.taskCode.trim()) {
+                                    layer.msg('任务编号不能为空', {icon: 2});
+                                    return false;
+                                }
+                                if (!data.batchId) {
+                                    layer.msg('批次ID不能为空', {icon: 2});
+                                    return false;
+                                }
+                                if (!data.startPlace || !data.startPlace.trim()) {
+                                    layer.msg('出发地不能为空', {icon: 2});
+                                    return false;
+                                }
+                                if (!data.endPlace || !data.endPlace.trim()) {
+                                    layer.msg('目的地不能为空', {icon: 2});
+                                    return false;
+                                }
+
+                                // 发送更新请求
+                                $.ajax({
+                                    url: '/api/task/update',
+                                    type: 'PUT',
+                                    contentType: 'application/json;charset=UTF-8',
+                                    data: JSON.stringify(data),
+                                    dataType: 'json',
+                                    success: function(res) {
+                                        if (res.code === 200) {
+                                            layer.msg(res.msg || '修改成功', {icon: 1});
+                                            taskTable.reload();
+                                            // 修改成功后刷新报表
+                                            initTaskReportChart();
+                                            layer.close(index);
+                                        } else {
+                                            layer.msg(res.msg || '修改失败', {icon: 2});
+                                        }
+                                    },
+                                    error: function(xhr) {
+                                        layer.msg('请求失败: ' + xhr.status, {icon: 2});
+                                    }
+                                });
+                            },
+                            btn2: function(index) {
+                                layer.close(index);
+                            }
+                        });
+                    } else {
+                        layer.msg(res.msg || '获取详情失败', {icon: 2});
+                    }
+                },
+                error: function(xhr) {
+                    layer.msg('请求失败: ' + xhr.status, {icon: 2});
+                }
+            });
+        });
+
+        // 开始运输
+        window.startTransport = function(taskId) {
+            layer.confirm('确定要开始这个运输任务吗？', {icon: 3, title: '开始运输'}, function(index) {
+                $.ajax({
+                    url: '/api/task/start/' + taskId,  // 使用路径参数
+                    type: 'PUT',
+                    dataType: 'json',
+                    success: function(res) {
+                        if (res.code === 200) {
+                            layer.msg(res.msg || '运输已开始', {icon: 1});
+                            taskTable.reload();
+                            // 操作成功后刷新报表
+                            initTaskReportChart();
+                        } else {
+                            layer.msg(res.msg || '操作失败', {icon: 2});
+                        }
+                    },
+                    error: function(xhr) {
+                        console.error('开始运输失败:', xhr);
+                        var errorMsg = '请求失败';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMsg = xhr.responseJSON.message;
+                        }
+                        layer.msg(errorMsg, {icon: 2});
+                    }
+                });
+                layer.close(index);
+            });
+        };
+
+        // 删除运输任务
+        $(document).on('click', '.delete-btn', function(e) {
+            e.stopPropagation();
+            var id = $(this).data('id');
+
+            layer.confirm('确定要删除该运输任务吗？', {icon: 3, title: '删除确认'}, function(index) {
+                $.ajax({
+                    url: '/api/task/delete/' + id,
+                    type: 'DELETE',
+                    success: function(res) {
+                        if (res.code === 200) {
+                            layer.msg(res.msg || '删除成功', {icon: 1});
+                            taskTable.reload();
+                            // 删除成功后刷新报表
+                            initTaskReportChart();
+                        } else {
+                            layer.msg(res.msg || '删除失败', {icon: 2});
+                        }
+                    },
+                    error: function(xhr) {
+                        var errorMsg = '请求失败';
+                        if (xhr.responseJSON && xhr.responseJSON.msg) {
+                            errorMsg = xhr.responseJSON.msg;
+                        }
+                        layer.msg(errorMsg + ' (状态码: ' + xhr.status + ')', {icon: 2});
+                    }
+                });
+                layer.close(index);
+            });
+        });
+    });
+
+    // 初始化任务报表图表（饼图展示任务状态分布）
+    function initTaskReportChart() {
+        // 初始化ECharts实例
+        var chart = echarts.init(document.getElementById('taskReportChart'));
+
+        // 显示加载提示
+        chart.showLoading({
+            text: '正在加载报表数据...',
+            color: '#FF5722',
+            textColor: '#666'
+        });
+
+        // 调用后端报表接口
+        $.ajax({
+            url: "/task/report/statusCount",
+            type: "GET",
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+            },
+            success: function(res) {
+                // 隐藏加载提示
+                chart.hideLoading();
+
+                if (res.code === 0 && res.data && res.data.length > 0) {
+                    // 状态映射（英文转中文，提升展示效果）
+                    var statusMap = {
+                        'pending': '待分配',
+                        'transporting': '运输中',
+                        'completed': '已完成',
+                        'canceled': '已取消'
+                    };
+
+                    // 整理饼图数据
+                    var pieData = [];
+                    res.data.forEach(item => {
+                        pieData.push({
+                            name: statusMap[item.status] || '未知状态',
+                            value: item.task_count
+                        });
+                    });
+
+                    // 饼图配置项
+                    var option = {
+                        title: {
+                            text: '运输任务状态分布',
+                            left: 'center',
+                            textStyle: { fontSize: 16, fontWeight: 500 }
+                        },
+                        tooltip: {
+                            trigger: 'item',
+                            formatter: '{b}: {c} 个 ({d}%)' // 显示名称、数量、占比
+                        },
+                        legend: {
+                            orient: 'vertical',
+                            left: 'left',
+                            textStyle: { fontSize: 12 }
+                        },
+                        series: [{
+                            name: '任务数量',
+                            type: 'pie',
+                            radius: ['40%', '70%'], // 饼图内外半径
+                            data: pieData,
+                            label: {
+                                show: true,
+                                fontSize: 12,
+                                formatter: '{b}: {c} ({d}%)'
+                            },
+                            itemStyle: {
+                                // 自定义饼图颜色（和状态标签配色一致）
+                                colors: ['#1890ff', '#faad14', '#52c41a', '#d9d9d9']
+                            },
+                            emphasis: {
+                                itemStyle: {
+                                    shadowBlur: 10,
+                                    shadowOffsetX: 0,
+                                    shadowColor: 'rgba(0, 0, 0, 0.5)'
+                                }
+                            }
+                        }]
+                    };
+
+                    // 渲染图表
+                    chart.setOption(option);
+                } else {
+                    // 无数据时的降级处理：从列表接口获取数据统计
+                    $.ajax({
+                        url: '/api/task/list',
+                        type: 'GET',
+                        headers: {
+                            'Authorization': 'Bearer ' + localStorage.getItem('token')
+                        },
+                        success: function(batchRes) {
+                            if (batchRes.code === 0 || batchRes.code === 200) {
+                                var taskList = batchRes.data || [];
+                                if (taskList.length > 0) {
+                                    // 统计各状态任务数量
+                                    var statusCount = {
+                                        'pending': 0,
+                                        'transporting': 0,
+                                        'completed': 0,
+                                        'canceled': 0
+                                    };
+
+                                    taskList.forEach(task => {
+                                        var status = task.status || 'pending';
+                                        if (statusCount.hasOwnProperty(status)) {
+                                            statusCount[status]++;
+                                        }
+                                    });
+
+                                    // 转换为饼图数据
+                                    var pieData = [];
+                                    var statusMap = {
+                                        'pending': '待分配',
+                                        'transporting': '运输中',
+                                        'completed': '已完成',
+                                        'canceled': '已取消'
+                                    };
+
+                                    for (var key in statusCount) {
+                                        if (statusCount[key] > 0) {
+                                            pieData.push({
+                                                name: statusMap[key],
+                                                value: statusCount[key]
+                                            });
+                                        }
+                                    }
+
+                                    // 渲染图表
+                                    chart.setOption({
+                                        title: { text: '运输任务状态分布', left: 'center' },
+                                        tooltip: { trigger: 'item' },
+                                        legend: { orient: 'vertical', left: 'left' },
+                                        series: [{
+                                            name: '任务数量',
+                                            type: 'pie',
+                                            radius: ['40%', '70%'],
+                                            data: pieData,
+                                            label: { show: true, formatter: '{b}: {c} ({d}%)' },
+                                            itemStyle: { colors: ['#1890ff', '#faad14', '#52c41a', '#d9d9d9'] }
+                                        }]
+                                    });
+                                } else {
+                                    // 无任何任务数据
+                                    renderEmptyChart(chart);
+                                }
+                            } else {
+                                renderEmptyChart(chart);
+                            }
+                        },
+                        error: function() {
+                            renderEmptyChart(chart);
+                        }
+                    });
+                }
+            },
+            error: function() {
+                // 接口请求失败，尝试从列表接口获取数据
+                chart.hideLoading();
+                $.ajax({
+                    url: '/api/task/list',
+                    type: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    },
+                    success: function(batchRes) {
+                        if (batchRes.code === 0 || batchRes.code === 200) {
+                            var taskList = batchRes.data || [];
+                            if (taskList.length > 0) {
+                                var statusCount = { 'pending':0, 'transporting':0, 'completed':0, 'canceled':0 };
+                                taskList.forEach(task => {
+                                    var status = task.status || 'pending';
+                                    statusCount[status]++;
+                                });
+
+                                var pieData = [];
+                                var statusMap = {
+                                    'pending': '待分配',
+                                    'transporting': '运输中',
+                                    'completed': '已完成',
+                                    'canceled': '已取消'
+                                };
+
+                                for (var key in statusCount) {
+                                    if (statusCount[key] > 0) {
+                                        pieData.push({ name: statusMap[key], value: statusCount[key] });
+                                    }
+                                }
+
+                                chart.setOption({
+                                    title: { text: '运输任务状态分布', left: 'center' },
+                                    tooltip: { trigger: 'item' },
+                                    legend: { orient: 'vertical', left: 'left' },
+                                    series: [{
+                                        name: '任务数量',
+                                        type: 'pie',
+                                        radius: ['40%', '70%'],
+                                        data: pieData,
+                                        label: { show: true, formatter: '{b}: {c} ({d}%)' },
+                                        itemStyle: { colors: ['#1890ff', '#faad14', '#52c41a', '#d9d9d9'] }
+                                    }]
+                                });
+                            } else {
+                                renderEmptyChart(chart);
+                            }
+                        } else {
+                            renderEmptyChart(chart);
+                        }
+                    },
+                    error: function() {
+                        renderEmptyChart(chart);
+                    }
+                });
+            }
+        });
+
+        // 自适应窗口大小
+        window.addEventListener('resize', function() {
+            chart.resize();
+        });
+    }
+
+    // 渲染无数据的图表提示
+    function renderEmptyChart(chart) {
+        var option = {
+            title: {
+                text: '运输任务状态分布',
+                left: 'center',
+                textStyle: { fontSize: 16, fontWeight: 500 }
+            },
+            graphic: {
+                type: 'text',
+                left: 'center',
+                top: '50%',
+                style: {
+                    text: '暂无运输任务数据，请先添加任务',
+                    fontSize: 14,
+                    fill: '#999'
+                }
+            }
+        };
+        chart.setOption(option);
+    }
+</script>
+</body>
+</html>

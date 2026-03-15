@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生猪运输管理系统</title>
+    <link rel="stylesheet" href="/layui/css/layui.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #5FB878;
+            --primary-light: #7bc68c;
+            --secondary-color: #1E9FFF;
+            --secondary-light: #4ab4ff;
+            --dark-bg: #2f4050;
+            --dark-light: #3a4d5c;
+            --light-bg: #f8f9fa;
+            --sidebar-width: 260px;
+            --header-height: 60px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+            overflow-x: hidden;
+            background: var(--light-bg);
+        }
+
+        /* 头部样式 */
+        .system-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-height);
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-icon {
+            font-size: 32px;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-5px) rotate(5deg); }
+            75% { transform: translateY(5px) rotate(-5deg); }
+        }
+
+        .logo-text h1 {
+            font-size: 22px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+
+        .logo-text p {
+            font-size: 12px;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            padding: 8px 15px;
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.15);
+            transition: all 0.3s;
+        }
+
+        .user-menu:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--primary-light), var(--secondary-light));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-name {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .user-role {
+            font-size: 11px;
+            opacity: 0.8;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-top: 2px;
+            display: inline-block;
+        }
+
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .menu-toggle:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* 侧边栏样式 */
+        .system-sidebar {
+            position: fixed;
+            left: 0;
+            top: var(--header-height);
+            bottom: 50px;
+            width: var(--sidebar-width);
+            background: var(--dark-bg);
+            color: white;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
+            z-index: 999;
+        }
+
+        .sidebar-content {
+            padding: 25px 20px;
+        }
+
+        .menu-section {
+            margin-bottom: 25px;
+        }
+
+        .menu-title {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+            padding-left: 10px;
+        }
+
+        .menu-list {
+            list-style: none;
+        }
+
+        .menu-item {
+            margin-bottom: 8px;
+        }
+
+        .menu-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 18px;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .menu-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .menu-link.active {
+            background: linear-gradient(90deg, rgba(95, 184, 120, 0.2), rgba(30, 159, 255, 0.1));
+            color: white;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .menu-icon {
+            font-size: 18px;
+            width: 24px;
+            text-align: center;
+        }
+
+        .menu-text {
+            font-size: 14px;
+            font-weight: 500;
+            flex: 1;
+        }
+
+        .menu-badge {
+            background: var(--primary-color);
+            color: white;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        /* 内容区域样式 */
+        .system-content {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--header-height);
+            padding: 25px;
+            min-height: calc(100vh - var(--header-height) - 50px);
+            transition: margin-left 0.3s ease;
+        }
+
+        .tab-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        .tab-header {
+            display: flex;
+            background: white;
+            border-bottom: 1px solid #eee;
+            padding: 0 20px;
+            overflow-x: auto;
+        }
+
+        .tab-item {
+            padding: 18px 25px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+            transition: all 0.3s;
+            position: relative;
+            font-weight: 500;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-item:hover {
+            color: var(--primary-color);
+        }
+
+        .tab-item.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+            background: linear-gradient(to bottom, rgba(95, 184, 120, 0.05), transparent);
+        }
+
+        .tab-close {
+            margin-left: 8px;
+            opacity: 0.5;
+            transition: opacity 0.3s;
+        }
+
+        .tab-item:hover .tab-close {
+            opacity: 1;
+        }
+
+        .tab-content {
+            padding: 0;
+        }
+
+        .tab-pane {
+            display: none;
+            min-height: 500px;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        .tab-iframe {
+            width: 100%;
+            height: calc(100vh - 180px);
+            border: none;
+            border-radius: 0 0 16px 16px;
+        }
+
+        /* 底部样式 */
+        .system-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background: white;
+            border-top: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            font-size: 13px;
+            color: #666;
+            z-index: 998;
+            transition: left 0.3s ease;
+        }
+
+        .footer-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .footer-right a {
+            color: var(--secondary-color);
+            text-decoration: none;
+            margin-left: 15px;
+            transition: color 0.3s;
+        }
+
+        .footer-right a:hover {
+            color: var(--primary-color);
+        }
+
+        /* 空状态样式 */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .empty-text {
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .empty-subtext {
+            font-size: 13px;
+            opacity: 0.7;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1024px) {
+            :root {
+                --sidebar-width: 240px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .system-sidebar {
+                transform: translateX(-100%);
+            }
+
+            .system-sidebar.show {
+                transform: translateX(0);
+            }
+
+            .system-content {
+                margin-left: 0;
+            }
+
+            .system-footer {
+                left: 0;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+
+            .header-controls {
+                gap: 15px;
+            }
+
+            .logo-text h1 {
+                font-size: 18px;
+            }
+
+            .logo-text p {
+                font-size: 11px;
+            }
+
+            .user-info {
+                display: none;
+            }
+
+            .tab-item {
+                padding: 15px 20px;
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .system-header {
+                padding: 0 15px;
+            }
+
+            .system-content {
+                padding: 15px;
+            }
+
+            .tab-item {
+                padding: 12px 15px;
+            }
+
+            .footer-left, .footer-right {
+                font-size: 12px;
+            }
+        }
+
+        /* 滚动条美化 */
+        .system-sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .system-sidebar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .system-sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+
+        .system-sidebar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* 加载动画 */
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 通知徽章 */
+        .notification-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 8px;
+            height: 8px;
+            background: #ff4757;
+            border-radius: 50%;
+            border: 2px solid var(--dark-bg);
+        }
+
+        /* 页面加载过渡 */
+        .page-loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--light-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.8s ease;
+        }
+
+        .loading-text {
+            font-size: 18px;
+            color: var(--primary-color);
+            margin-left: 15px;
+        }
+    </style>
+</head>
+<body>
+<!-- 页面加载过渡层 -->
+<div class="page-loading" id="pageLoading">
+    <div class="loader"></div>
+    <div class="loading-text">正在加载系统...</div>
+</div>
+
+<!-- 头部区域 -->
+<header class="system-header">
+    <div class="logo-area">
+        <button class="menu-toggle" id="menuToggle">
+            <i class="fas fa-bars"></i>
+        </button>
+        <span class="logo-icon">🐷</span>
+        <div class="logo-text">
+            <h1>生猪运输管理系统</h1>
+            <p>智能协同 • 高效管理</p>
+        </div>
+    </div>
+
+    <div class="header-controls">
+        <div class="system-time" id="currentTime">
+            正在获取时间...
+        </div>
+        <div class="user-menu" id="userMenu">
+            <div class="user-avatar" id="userAvatar">
+                A
+            </div>
+            <div class="user-info">
+                <div class="user-name" id="userName">管理员</div>
+                <div class="user-role" id="userRole">管理员</div>
+            </div>
+            <i class="fas fa-chevron-down"></i>
+        </div>
+    </div>
+</header>
+
+<!-- 侧边栏菜单 -->
+<aside class="system-sidebar" id="sidebar">
+    <div class="sidebar-content">
+        <div class="menu-section">
+            <div class="menu-title">系统导航</div>
+            <ul class="menu-list">
+                <li class="menu-item">
+                    <a href="javascript:;" class="menu-link active" data-url="/main.html" data-title="系统首页">
+                        <span class="menu-icon">🏠</span>
+                        <span class="menu-text">系统首页</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="menu-section">
+            <div class="menu-title">核心管理</div>
+            <ul class="menu-list">
+                <li class="menu-item" id="menuUser">
+                    <a href="javascript:;" class="menu-link" data-url="/user-list.html" data-title="用户管理">
+                        <span class="menu-icon">👥</span>
+                        <span class="menu-text">用户管理</span>
+                        <span class="menu-badge" id="userBadge" style="display: none;">0</span>
+                    </a>
+                </li>
+                <li class="menu-item" id="menuVehicle">
+                    <a href="javascript:;" class="menu-link" data-url="/vehicle-list.html" data-title="车辆管理">
+                        <span class="menu-icon">🚚</span>
+                        <span class="menu-text">车辆管理</span>
+                    </a>
+                </li>
+                <li class="menu-item" id="menuBatch">
+                    <a href="javascript:;" class="menu-link" data-url="/batch-list.html" data-title="生猪批次">
+                        <span class="menu-icon">🐖</span>
+                        <span class="menu-text">生猪批次</span>
+                    </a>
+                </li>
+                <li class="menu-item" id="menuTask">
+                    <a href="javascript:;" class="menu-link" data-url="/task-list.html" data-title="运输任务">
+                        <span class="menu-icon">📦</span>
+                        <span class="menu-text">运输任务</span>
+                        <span class="menu-badge" id="taskBadge" style="display: none;">0</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="menu-section">
+            <div class="menu-title">运输流程</div>
+            <ul class="menu-list">
+                <li class="menu-item" id="menuDisinfection">
+                    <a href="javascript:;" class="menu-link" data-url="/disinfection-list.html" data-title="消毒记录">
+                        <span class="menu-icon">🧼</span>
+                        <span class="menu-text">消毒记录</span>
+                        <span class="notification-badge" id="disinfectionNotify" style="display: none;"></span>
+                    </a>
+                </li>
+                <li class="menu-item" id="menuLocation">
+                    <a href="javascript:;" class="menu-link" data-url="/location-list.html" data-title="位置签到">
+                        <span class="menu-icon">📍</span>
+                        <span class="menu-text">位置签到</span>
+                        <span class="menu-badge" id="locationBadge" style="display: none;">0</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="menu-section">
+            <div class="menu-title">系统工具</div>
+            <ul class="menu-list">
+                <li class="menu-item">
+                    <a href="javascript:;" class="menu-link" id="logoutBtn">
+                        <span class="menu-icon">🚪</span>
+                        <span class="menu-text">退出登录</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</aside>
+
+<!-- 内容区域 -->
+<main class="system-content">
+    <div class="tab-container">
+        <div class="tab-header" id="tabHeader">
+            <div class="tab-item active" data-tab="main">
+                <span>🏠 系统首页</span>
+                <span class="tab-close">&times;</span>
+            </div>
+        </div>
+        <div class="tab-content">
+            <div class="tab-pane active" id="tab-main">
+                <iframe src="/main.html" class="tab-iframe" id="mainFrame"></iframe>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- 底部区域 -->
+<footer class="system-footer">
+    <div class="footer-left">
+        <div class="status-indicator">
+            <div class="status-dot"></div>
+            <span>系统运行正常</span>
+        </div>
+        <span id="serverTime">--:--:--</span>
+    </div>
+    <div class="footer-right">
+        <span>生猪运输管理系统 © 2026</span>
+        <a href="javascript:;" id="refreshBtn">刷新</a>
+        <a href="javascript:;" id="helpBtn">帮助</a>
+    </div>
+</footer>
+
+<!-- 用户菜单下拉 -->
+<div id="userDropdown" style="display: none; position: fixed; top: 70px; right: 20px; background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); padding: 15px 0; min-width: 200px; z-index: 1001; border: 1px solid #eee;">
+    <div style="padding: 0 20px 15px; border-bottom: 1px solid #eee; margin-bottom: 10px;">
+        <div style="font-weight: 600; color: #333; margin-bottom: 5px;" id="dropdownName">管理员</div>
+        <div style="font-size: 12px; color: #666;" id="dropdownRole">管理员</div>
+    </div>
+    <a href="javascript:;" style="display: block; padding: 12px 20px; color: #555; text-decoration: none; transition: all 0.3s;"
+       onmouseover="this.style.background='#f8f9fa'; this.style.color='#5FB878';"
+       onmouseout="this.style.background='white'; this.style.color='#555';">
+        <i class="fas fa-user-circle" style="margin-right: 10px;"></i>个人中心
+    </a>
+    <a href="javascript:;" style="display: block; padding: 12px 20px; color: #555; text-decoration: none; transition: all 0.3s;"
+       onmouseover="this.style.background='#f8f9fa'; this.style.color='#5FB878';"
+       onmouseout="this.style.background='white'; this.style.color='#555';">
+        <i class="fas fa-cog" style="margin-right: 10px;"></i>账户设置
+    </a>
+    <div style="padding: 10px 20px 0; margin-top: 10px; border-top: 1px solid #eee;">
+        <a href="javascript:;" id="logoutDropdownBtn" style="display: block; padding: 10px; background: #ff4757; color: white; text-align: center; border-radius: 8px; text-decoration: none; font-weight: 500;">
+            <i class="fas fa-sign-out-alt" style="margin-right: 8px;"></i>退出登录
+        </a>
+    </div>
+</div>
+
+<script src="/layui/layui.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script>
+    $(document).ready(function() {
+        // 初始化变量
+        let currentUser = {};
+        let tabs = [];
+        let activeTab = 'main';
+        let token = localStorage.getItem('token');
+
+        // ========== Token 认证核心逻辑 ==========
+        // 1. 检查Token是否存在
+        if (!token) {
+            layer.msg('请先登录系统', {icon: 2});
+            setTimeout(() => {
+                window.location.href = '/login.html';
+            }, 1500);
+            return;
+        }
+
+        // 2. 设置全局AJAX请求头（携带Token）
+        $.ajaxSetup({
+            headers: {
+                'Authorization': 'Bearer ' + token
+            },
+            error: function(xhr) {
+                // Token过期/无效处理
+                if (xhr.status === 401) {
+                    layer.msg('登录已过期，请重新登录', {icon: 2});
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('userInfo');
+                    setTimeout(() => {
+                        window.location.href = '/login.html';
+                    }, 1500);
+                }
+            }
+        });
+
+        // ========== 页面加载过渡 ==========
+        setTimeout(() => {
+            $('#pageLoading').css('opacity', '0');
+            setTimeout(() => {
+                $('#pageLoading').hide();
+            }, 800);
+        }, 500);
+
+        // ========== 原有功能改造 ==========
+        // 1. 加载用户信息（从本地缓存或接口）- 修复版本
+        // 1. 加载用户信息（从本地缓存或接口）- 修复版本
+        function loadUserInfo() {
+            $.ajax({
+                url: '/api/users/current',
+                type: 'GET',
+                success: function(res) {
+                    console.log('用户信息响应:', res);
+
+                    if (res && res.code === 200) {
+                        currentUser = res.data;
+                        updateUserDisplay();
+                        updateMenuByRole();
+                        loadSystemStats();
+
+                        // ========== 新增：将用户信息保存到 localStorage ==========
+                        localStorage.setItem('userInfo', JSON.stringify(currentUser));
+                        console.log('✅ 用户信息已保存到 localStorage:', currentUser);
+
+                        // ========== 新增：通过 iframe 传递用户信息 ==========
+                        setTimeout(() => {
+                            const mainFrame = document.getElementById('mainFrame');
+                            if (mainFrame && mainFrame.contentWindow) {
+                                try {
+                                    mainFrame.contentWindow.postMessage({
+                                        type: 'USER_INFO',
+                                        userInfo: currentUser
+                                    }, '*');
+                                    console.log('✅ 用户信息已发送给 main.html');
+                                } catch (e) {
+                                    console.error('发送用户信息失败:', e);
+                                }
+                            }
+                        }, 1000);
+
+                    } else {
+                        console.log('未获取到用户信息，跳转到登录页');
+                        window.location.href = '/login.html';
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('加载用户信息失败:', status, error);
+                    window.location.href = '/login.html';
+                }
+            });
+        }
+
+        // 2. 更新用户显示
+        function updateUserDisplay() {
+            $('#userName').text(currentUser.realName || currentUser.username || "管理员");
+            $('#userAvatar').text((currentUser.realName || currentUser.username || "A").charAt(0).toUpperCase());
+
+            let roleText = '';
+            switch(currentUser.role) {
+                case 'admin': roleText = '管理员'; break;
+                case 'farmer': roleText = '养殖户'; break;
+                case 'driver': roleText = '司机'; break;
+                default: roleText = '用户';
+            }
+            $('#userRole').text(roleText);
+            $('#dropdownName').text(currentUser.realName || currentUser.username || "管理员");
+            $('#dropdownRole').text(roleText);
+        }
+
+        // 3. 根据角色更新菜单
+        function updateMenuByRole() {
+            const role = currentUser.role || 'admin';
+
+            if(role === 'admin') {
+                $('#menuUser').show();
+            } else {
+                $('#menuUser').hide();
+            }
+        }
+
+        // 4. 加载系统统计
+        function loadSystemStats() {
+            setTimeout(() => {
+                $('#userBadge').text('15').show();
+                $('#taskBadge').text('3').show();
+            }, 1000);
+        }
+
+        // 5. 菜单点击事件
+        // 5. 菜单点击事件
+        $(document).on('click', '.menu-link', function(e) {
+            e.preventDefault();
+
+            const url = $(this).data('url');
+            const title = $(this).data('title');
+
+            if(!url || !title) return;
+
+            // ========== 权限检查核心逻辑 ==========
+            const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+            const role = userInfo.role;
+
+            // 定义每个页面的允许访问角色
+            const pagePermissions = {
+                '/user-list.html': ['admin'],
+                '/vehicle-list.html': ['admin'],
+                '/disinfection-list.html': ['admin'],
+                '/batch-list.html': ['admin', 'farmer'],
+                '/task-list.html': ['admin', 'farmer', 'driver'],
+                '/location-list.html': ['admin', 'driver'],
+                '/settings.html': ['admin', 'farmer', 'driver'],
+                '/main.html': ['admin', 'farmer', 'driver']
+            };
+
+            // 获取页面文件名
+            const pageFile = url.substring(url.lastIndexOf('/') + 1);
+
+            // 检查是否有权限
+            // 在权限检查部分修改提示信息
+            if(pagePermissions[pageFile] && !pagePermissions[pageFile].includes(role)) {
+                layui.use('layer', function() {
+                    var layer = layui.layer;
+
+                    // 根据角色给出不同的提示
+                    let message = '您没有权限访问此功能';
+                    let icon = 2;
+
+                    if(role === 'driver') {
+                        message = '此功能仅管理员可用，请联系管理员';
+                    } else if(role === 'farmer') {
+                        if(pageFile === 'location-list.html') {
+                            message = '位置签到功能仅司机可用';
+                        } else if(pageFile === 'user-list.html' || pageFile === 'vehicle-list.html') {
+                            message = '此功能仅管理员可用';
+                        }
+                    }
+
+                    layer.msg('⛔ ' + message, {
+                        icon: icon,
+                        time: 2500
+                    });
+                });
+                return;
+            }
+            // ========== 权限检查结束 ==========
+
+            // 有权限，正常打开页面
+            openTab(url, title);
+            $('.menu-link').removeClass('active');
+            $(this).addClass('active');
+
+            // 移动端点击后关闭侧边栏
+            if(window.innerWidth <= 768) {
+                $('#sidebar').removeClass('show');
+            }
+        });
+
+        // 6. 打开标签页
+        function openTab(url, title) {
+            const tabId = 'tab_' + Date.now();
+
+            // 检查是否已存在该标签
+            const existingTab = tabs.find(tab => tab.title === title);
+            if(existingTab) {
+                switchTab(existingTab.id);
+                return;
+            }
+
+            // 创建新标签
+            const tab = {
+                id: tabId,
+                url: url,
+                title: title
+            };
+            tabs.push(tab);
+
+            // 添加标签到头部
+            const tabHtml = `
+                <div class="tab-item" data-tab="${tabId}">
+                    <span>${title}</span>
+                    <span class="tab-close">&times;</span>
+                </div>
+            `;
+            $('#tabHeader').append(tabHtml);
+
+            // 添加内容区域
+            const contentHtml = `
+                <div class="tab-pane" id="${tabId}">
+                    <iframe src="${url}" class="tab-iframe" data-tab="${tabId}"></iframe>
+                </div>
+            `;
+            $('.tab-content').append(contentHtml);
+
+            // 切换到新标签
+            switchTab(tabId);
+        }
+
+        // 7. 切换标签
+        function switchTab(tabId) {
+            $('.tab-item').removeClass('active');
+            $(`.tab-item[data-tab="${tabId}"]`).addClass('active');
+
+            $('.tab-pane').removeClass('active');
+            $(`#${tabId}`).addClass('active');
+
+            activeTab = tabId;
+        }
+
+        // 8. 关闭标签
+        $(document).on('click', '.tab-close', function(e) {
+            e.stopPropagation();
+
+            const tabId = $(this).parent().data('tab');
+            if(tabId === 'main') return;
+
+            $(this).parent().remove();
+            $(`#${tabId}`).remove();
+
+            tabs = tabs.filter(tab => tab.id !== tabId);
+            switchTab('main');
+            $('.menu-link[data-url="/main.html"]').addClass('active');
+        });
+
+        // 9. 标签点击事件
+        $(document).on('click', '.tab-item', function() {
+            const tabId = $(this).data('tab');
+            switchTab(tabId);
+
+            const tab = tabs.find(t => t.id === tabId);
+            if(tab) {
+                $('.menu-link').removeClass('active');
+                $(`.menu-link[data-url="${tab.url}"]`).addClass('active');
+            }
+        });
+
+        // 10. 用户菜单点击
+        $('#userMenu').click(function(e) {
+            e.stopPropagation();
+            const dropdown = $('#userDropdown');
+            if(dropdown.is(':visible')) {
+                dropdown.hide();
+            } else {
+                dropdown.css({
+                    top: $(this).offset().top + $(this).outerHeight() + 10,
+                    right: $(window).width() - $(this).offset().left - $(this).outerWidth() + 20
+                }).show();
+            }
+        });
+
+        // 11. 点击其他地方关闭用户菜单
+        $(document).click(function() {
+            $('#userDropdown').hide();
+        });
+
+        // 12. 退出登录（清除Token）
+        function logout() {
+            layui.use('layer', function() {
+                var layer = layui.layer;
+
+                layer.confirm('确定要退出登录吗？', {
+                    title: '退出确认',
+                    icon: 3,
+                    btn: ['确定', '取消']
+                }, function(index) {
+                    // 调用退出接口（可选）
+                    $.post('/api/users/logout', {}, function(res) {
+                        // 无论接口是否成功，都清除本地Token
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('userInfo');
+
+                        layer.msg('退出成功', {icon: 1});
+                        setTimeout(() => {
+                            window.location.href = '/login.html';
+                        }, 1000);
+                    }).fail(function() {
+                        // 接口失败也清除Token
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('userInfo');
+                        layer.msg('退出成功', {icon: 1});
+                        setTimeout(() => {
+                            window.location.href = '/login.html';
+                        }, 1000);
+                    });
+                    layer.close(index);
+                });
+            });
+        }
+
+        // 绑定退出按钮事件
+        $('#logoutBtn, #logoutDropdownBtn').click(logout);
+
+        // 13. 菜单切换（移动端）
+        $('#menuToggle').click(function() {
+            $('#sidebar').toggleClass('show');
+        });
+
+        // 14. 刷新按钮
+        $('#refreshBtn').click(function() {
+            const iframe = $(`#${activeTab} iframe`);
+            if(iframe.length) {
+                iframe[0].contentWindow.location.reload();
+            }
+        });
+
+        // 15. 帮助按钮
+        $('#helpBtn').click(function() {
+            layui.use('layer', function() {
+                var layer = layui.layer;
+
+                layer.open({
+                    type: 1,
+                    title: '系统帮助',
+                    area: ['500px', '400px'],
+                    content: `
+                        <div style="padding: 20px; line-height: 1.8;">
+                            <h3 style="color: #5FB878; margin-bottom: 15px;">生猪运输管理系统使用指南</h3>
+                            <p><strong>👥 用户管理：</strong>系统管理员可以管理所有用户账户</p>
+                            <p><strong>🚚 车辆管理：</strong>查看和管理运输车辆信息</p>
+                            <p><strong>🐖 生猪批次：</strong>养殖户可以录入生猪批次信息</p>
+                            <p><strong>📦 运输任务：</strong>分配和跟踪生猪运输任务</p>
+                            <p><strong>🧼 消毒记录：</strong>记录车辆消毒情况（支持照片上传）</p>
+                            <p><strong>📍 位置签到：</strong>司机在运输途中进行位置签到</p>
+                            <hr style="margin: 20px 0;">
+                            <p style="color: #666; font-size: 13px;">如有问题请联系系统管理员</p>
+                        </div>
+                    `
+                });
+            });
+        });
+
+        // 16. 更新时间显示
+        function updateTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('zh-CN');
+            const dateStr = now.toLocaleDateString('zh-CN', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                weekday: 'long'
+            });
+
+            $('#currentTime').html(`
+                <i class="far fa-clock" style="margin-right: 8px;"></i>
+                ${timeStr}
+            `);
+            $('#serverTime').text(dateStr);
+        }
+
+        // 17. 初始化
+        layui.use('layer', function() {
+            // 延迟加载用户信息，提升体验
+            setTimeout(() => {
+                loadUserInfo();
+            }, 300);
+
+            updateTime();
+            setInterval(updateTime, 1000);
+
+            // 设置初始页面
+            setTimeout(() => {
+                $('#mainFrame').attr('src', '/main.html');
+            }, 100);
+        });
+
+        // 阻止iframe内链接跳转外部页面
+        window.addEventListener('message', function(e) {
+            if(e.data && e.data.type === 'openTab') {
+                openTab(e.data.url, e.data.title);
+            }
+        });
+    });
+</script>
+</body>
+</html>
