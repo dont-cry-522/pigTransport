@@ -1,108 +1,72 @@
-# 🐖 生猪运输管理系统
+# PigTransport — 生猪调运管理系统
 
-基于 Spring Boot + MyBatis-Plus 开发，遵循 MVC 分层设计的生猪运输管理系统。
+> 基于 Spring Boot + MyBatis-Plus 的生猪运输全流程管理平台，涵盖批次调度、车辆管理、消毒记录、任务追踪等功能。
 
-## 📋 项目架构
+[![Java](https://img.shields.io/badge/Java-17+-blue)](https://www.java.com) [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-green)](https://spring.io/projects/spring-boot) [![MyBatis-Plus](https://img.shields.io/badge/MyBatis--Plus-3.x-orange)](https://baomidou.com) [![Layui](https://img.shields.io/badge/Layui-2.x-1E9FFF)](https://layui.dev) [![License](https://img.shields.io/badge/License-MIT-yellow)](./LICENSE)
 
-- **后端框架**：Spring Boot
-- **ORM框架**：MyBatis-Plus
-- **前端框架**：Layui
-- **数据库**：MySQL
-- **构建工具**：Maven
+## 项目简介
 
-## 📁 核心代码目录
+**PigTransport** 面向生猪调运行业，实现运输批次、车辆调度、消毒检疫、任务分配的全流程数字化管理。采用经典 MVC 分层架构，后端 Spring Boot + MyBatis-Plus，前端 Layui。
+
+## 核心功能
+
+| 模块 | 功能描述 |
+|------|---------|
+| 批次管理 | 创建运输批次、设置起止地点、跟踪批次状态 |
+| 车辆管理 | 车辆信息登记、状态维护（空闲/运输中/维修） |
+| 任务管理 | 运输任务分配、司机绑定、任务进度跟踪 |
+| 消毒管理 | 消毒记录登记、消毒结果记录 |
+| 地点管理 | 起运地/目的地信息维护 |
+| 数据看板 | Dashboard 首页展示关键统计指标 |
+
+## 技术栈
+
+| 层 | 技术 |
+|------|------|
+| 后端框架 | Spring Boot 3.x |
+| ORM | MyBatis-Plus |
+| 前端 | Layui |
+| 数据库 | MySQL |
+| 构建工具 | Maven |
+
+## 项目结构
 
 ```
 src/main/java/com/pigtransport/
 ├── common/                    # 通用工具与常量
-│   ├── constants/             # 系统枚举/常量定义（任务状态、用户角色等）
-│   ├── BaseEntity.java        # 实体基类（封装公共字段）
-│   ├── LayuiTableResult.java  # Layui表格统一返回格式
-│   └── Result.java            # 全局统一响应结果
-├── config/                    # 配置类
-│   ├── MybatisPlusConfig.java # MyBatis-Plus配置
-│   └── WebConfig.java         # Web相关配置
-├── controller/                # 控制器层（处理HTTP请求）
-│   ├── BatchController.java     # 批次管理
+│   ├── constants/             # 状态枚举（任务、车辆、消毒、用户角色等）
+│   ├── BaseEntity.java        # 实体基类
+│   ├── LayuiTableResult.java  # Layui 表格统一返回格式
+│   └── Result.java            # 全局统一响应体
+├── config/                    # 配置类（MyBatis-Plus、Web）
+├── controller/                # 接口层
+│   ├── BatchController.java   # 批次管理
+│   ├── VehicleController.java # 车辆管理
+│   ├── TaskController.java    # 运输任务管理
 │   ├── DisinfectionController.java # 消毒管理
-│   ├── TaskController.java      # 运输任务管理
-│   ├── UserController.java      # 用户管理
-│   └── VehicleController.java   # 车辆管理
-├── entity/                    # 实体类（与数据库表映射）
-│   ├── Batch.java
-│   ├── Disinfection.java
-│   ├── Task.java
-│   ├── User.java
-│   └── Vehicle.java
-├── mapper/                    # Mapper层（数据库访问接口）
-│   ├── BatchMapper.java
-│   ├── DisinfectionMapper.java
-│   ├── TaskMapper.java
-│   ├── UserMapper.java
-│   └── VehicleMapper.java
-└── service/                   # 业务逻辑层
-    ├── impl/                  # 业务逻辑实现类
-    │   ├── BatchServiceImpl.java
-    │   └── DisinfectionServiceImpl.java
-    ├── BatchService.java
-    └── DisinfectionService.java
+│   ├── UserController.java    # 用户管理
+│   └── DashboardController.java   # 数据看板
+├── entity/                    # 数据实体（Batch/Vehicle/Task/Disinfection/User/Location）
+├── mapper/                    # MyBatis Mapper 接口
+└── service/                   # 业务接口与实现（impl/）
 ```
 
-## 🎨 前端与资源目录
+## 快速开始
 
-```
-src/main/resources/
-├── static/                    # 静态资源（HTML/CSS/JS/图片）
-│   ├── disinfection/          # 消毒模块前端页面
-│   ├── layui/                 # Layui前端框架
-│   ├── task/                  # 任务模块前端页面
-│   ├── user/                  # 用户模块前端页面
-│   ├── vehicle/               # 车辆模块前端页面
-│   └── index.html             # 系统首页
-├── templates/                 # 模板文件（模板引擎使用）
-├── application.yml            # 主配置文件
-└── application.properties     # 备用配置文件
-```
+```bash
+# 1. 导入数据库
+mysql -u root -p < sql/init.sql
 
-## 📦 其他重要目录
+# 2. 修改数据库配置
+# 编辑 src/main/resources/application.yml
 
-```
-├── sql/                       # 数据库初始化脚本
-│   └── init.sql
-├── img/                       # 项目文档图片资源
-│   └── disinfection/
-├── logs/                      # 日志输出目录
-├── upload/                    # 文件上传目录
-│   └── images/
-├── target/                    # Maven构建输出目录
-├── pom.xml                    # Maven依赖配置
-└── README.md                  # 项目说明文档
+# 3. 启动项目
+mvn spring-boot:run
+
+# 4. 访问系统
+# 浏览器打开 http://localhost:8080
 ```
 
-## ⚙️ 核心模块说明
+## License
 
-| 模块 | 功能描述 |
-|------|---------|
-| **用户模块** | 用户信息管理、登录认证 |
-| **车辆模块** | 运输车辆信息维护 |
-| **任务模块** | 生猪运输任务的创建、状态管理 |
-| **消毒模块** | 运输前后的消毒记录管理 |
-| **批次模块** | 生猪批次信息管理 |
-
-## 🚀 快速开始
-
-1. **导入数据库**
-   ```bash
-   mysql -u root -p < sql/init.sql
-   ```
-
-2. **修改配置文件**
-   编辑 `src/main/resources/application.yml`，配置数据库连接信息
-
-3. **运行项目**
-   ```bash
-   mvn spring-boot:run
-   ```
-
-4. **访问系统**
-   打开浏览器访问 `http://localhost:8080`
+MIT
